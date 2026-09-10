@@ -73,7 +73,7 @@ export function baueGiesskanne({ groesse = 1 } = {}) {
 export function baueSamentuete({ groesse = 1 } = {}) {
   const tuete = new THREE.Group();
   const teile = new THREE.Group();
-  const papier = '#e8d3ab';
+  const papier = '#ff5a8a';      // knallig, damit man sie sofort findet
 
   for (let i = 0; i < 3; i++) {
     const s = macheSchnipsel({
@@ -98,13 +98,13 @@ export function baueSamentuete({ groesse = 1 } = {}) {
   const bild = new THREE.Group();
   bild.position.set(0, 0.1 * groesse, 0.048 * groesse);
   for (let i = 0; i < 5; i++) {
-    const b = macheSchnipsel({ bild: 'blueten-blatt', farbe: '#f492b4', hoehe: 0.045 * groesse, woelbung: 0.01 });
+    const b = macheSchnipsel({ bild: 'blueten-blatt', farbe: '#fff3b0', hoehe: 0.05 * groesse, woelbung: 0.01 });
     const winkel = (i / 5) * Math.PI * 2;
     b.position.set(Math.cos(winkel) * 0.022 * groesse, Math.sin(winkel) * 0.022 * groesse, 0);
     b.rotation.z = -winkel + Math.PI / 2;
     bild.add(b);
   }
-  const mitte = macheSchnipsel({ bild: 'klecks', farbe: '#ffd75e', hoehe: 0.026 * groesse, woelbung: 0.01 });
+  const mitte = macheSchnipsel({ bild: 'klecks', farbe: '#ffe066', hoehe: 0.03 * groesse, woelbung: 0.01 });
   bild.add(mitte);
   teile.add(bild);
 
@@ -121,12 +121,12 @@ export function baueSamentuete({ groesse = 1 } = {}) {
 }
 
 /* ---------- FUNKEN-RING: zeigt, dass man etwas nehmen kann ---------- */
-export function baueSchimmer({ groesse = 1, farbe = '#ffe9a8' } = {}) {
+export function baueSchimmer({ groesse = 1.4, farbe = '#fff3a8' } = {}) {
   const ring = new THREE.Group();
   const funken = [];
   for (let i = 0; i < 5; i++) {
     const f = macheSchnipsel({
-      bild: 'funke', farbe, hoehe: 0.07 * groesse, woelbung: 0, leuchten: 1.4, durchsichtig: true,
+      bild: 'funke', farbe, hoehe: 0.1 * groesse, woelbung: 0, leuchten: 1.8, durchsichtig: true,
     });
     f.material.opacity = 0.9;
     f.userData.phase = (i / 5) * Math.PI * 2;

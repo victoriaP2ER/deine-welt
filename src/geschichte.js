@@ -54,7 +54,7 @@ function stelleTrockenesGrasAuf(s, wieViele = 12) {
 /** Ein Ding zum Aufheben hinlegen - mit Funkeln, damit man es sieht */
 function legeHin(s, objekt, ort) {
   s.planet.stelleAuf(objekt, v(ort), { einsinken: 0.01 });
-  const schimmer = s.bauer.baueSchimmer({ groesse: 1 });
+  const schimmer = s.bauer.baueSchimmer({ groesse: 1.8 });
   objekt.add(schimmer);
   objekt.userData.schimmer = schimmer;
   const altesBeleben = objekt.userData.belebe;
@@ -203,7 +203,7 @@ const kapitel = [
         'Irgendwo liegt noch meine alte Giesskanne. Dreh den Planeten mal um - sie muss auf der anderen Seite sein!',
       ], 'normal');
 
-      const kanne = legeHin(s, s.bauer.baueGiesskanne({ groesse: 1 }), ORTE.giesskanne);
+      const kanne = legeHin(s, s.bauer.baueGiesskanne({ groesse: 1.5 }), ORTE.giesskanne);
       const treffer = await s.warteAufTipp('giesskanne', 'zieh mit dem Finger, um den Planeten zu drehen');
 
       // aufheben
@@ -320,7 +320,7 @@ const kapitel = [
       enthuelleNeuesStueck(s, 1, false);
     },
     spiel: async (s) => {
-      const tuete = legeHin(s, s.bauer.baueSamentuete({ groesse: 1 }), ORTE.samentuete);
+      const tuete = legeHin(s, s.bauer.baueSamentuete({ groesse: 1.8 }), ORTE.samentuete);
       s.klang.klangFunke();
 
       await s.mondSagt([

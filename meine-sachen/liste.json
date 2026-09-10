@@ -1,0 +1,11 @@
+{
+  "_hinweis": "Hier kannst du eigene 3D-Zeichnungen fest ins Spiel einbauen.",
+  "_beispiel": {
+    "datei": "mein-baum.glb",
+    "ort": [0.3, 0.5, 0.8],
+    "groesse": 0.6,
+    "_ort_erklaert": "wohin auf dem Planeten: x, y, z (y=1 ist oben)",
+    "_oder": "statt 'datei' kannst du 'icosa': 'SkizzenNummer' schreiben"
+  },
+  "sachen": []
+}

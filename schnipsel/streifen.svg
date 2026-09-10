@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="256" viewBox="0 0 128 256">
+  <defs>
+    <filter id="pinsel" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.018 0.05" numOctaves="3" seed="13" result="wackel"/>
+      <feDisplacementMap in="SourceGraphic" in2="wackel" scale="8" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <linearGradient id="strich" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.55" stop-color="#f2f2f2"/>
+      <stop offset="1" stop-color="#d8d8d8"/>
+    </linearGradient>
+  </defs>
+  <g filter="url(#pinsel)">
+    <path d="M34 254 C 28 190 30 120 40 44 C 44 20 84 20 88 44 C 98 120 100 190 94 254 Z" fill="url(#strich)"/>
+    <path d="M56 250 C 50 186 52 116 60 46" stroke="#cccccc" stroke-width="9" fill="none" opacity="0.5"/>
+    <path d="M78 248 C 74 186 76 118 82 50" stroke="#e8e8e8" stroke-width="6" fill="none" opacity="0.6"/>
+  </g>
+</svg>

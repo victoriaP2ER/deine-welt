@@ -1,0 +1,38 @@
+HIER KOMMEN DEINE EIGENEN 3D-ZEICHNUNGEN REIN
+=============================================
+
+Leg deine Open-Brush-Dateien einfach in diesen Ordner:
+
+    meine-sachen/baum.glb
+    meine-sachen/blume.glb
+    meine-sachen/drache.glb      <- was du willst!
+
+Es muessen .glb Dateien sein (das kann Open Brush).
+
+
+WIE KOMMT DIE ZEICHNUNG VON DER QUEST HIERHIN?
+----------------------------------------------
+
+Weg 1 - Kabel (am einfachsten):
+  1. In Open Brush: Menue -> Save/Share -> Export
+     (die Datei landet auf der Quest unter:
+      Android/data/com.icosa.openblocks/... bzw.
+      Open Brush/Exports/DeineSkizze/DeineSkizze.glb)
+  2. Quest mit dem USB-Kabel an den Computer,
+     in der Brille "Dateien zulassen" antippen
+  3. Datei suchen und in diesen Ordner kopieren
+
+Weg 2 - ueber das Internet:
+  1. In Open Brush auf Icosa Gallery oder Sketchfab hochladen
+  2. Am Computer die Seite oeffnen und als .glb herunterladen
+  3. Datei in diesen Ordner kopieren
+
+
+UND DANN?
+---------
+Sag mir einfach: "ich habe blume.glb reingelegt"
+Dann baue ich sie in dein Spiel ein.
+
+Oder du ziehst die Datei einfach ins Spielfenster -
+dann landet sie sofort auf dem Planeten (aber nur zum Ausprobieren,
+nach dem Neuladen ist sie wieder weg).

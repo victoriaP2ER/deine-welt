@@ -159,6 +159,7 @@ export function fuegeWerkzeugHinzu(name, bildPfad, titel) {
   });
   teile.tasche.appendChild(knopf);
   werkzeuge.set(name, knopf);
+  document.body.classList.add('hat-tasche');
   waehleWerkzeug(name);
 }
 

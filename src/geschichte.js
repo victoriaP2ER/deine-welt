@@ -169,7 +169,7 @@ const kapitel = [
         'Streichel ihn doch mal. Damit er merkt, dass du da bist.',
       ], 'traurig');
 
-      await s.warteAufStreicheln(10, 'streichel den Punkt - fahr mit dem Finger hin und her');
+      await s.warteAufStreicheln(10, 'streichel den Punkt: Finger hin und her');
 
       // Der Planet traut sich wieder heraus
       s.zeigePlanet(0.62);
@@ -204,7 +204,7 @@ const kapitel = [
       ], 'normal');
 
       const kanne = legeHin(s, s.bauer.baueGiesskanne({ groesse: 1.5 }), ORTE.giesskanne);
-      const treffer = await s.warteAufTipp('giesskanne', 'zieh mit dem Finger, um den Planeten zu drehen');
+      const treffer = await s.warteAufTipp('giesskanne', 'dreh den Planeten und suche die Giesskanne');
 
       // aufheben
       s.klang.klangPlopp();
@@ -239,7 +239,7 @@ const kapitel = [
       const anfang = s.zaehle('gras-trocken');
       await s.warteBis(
         () => s.zaehle('gras-trocken') <= anfang - 3,
-        'giesse das trockene Gras (tippe es an)'
+        'tippe das trockene Gras an'
       );
 
       s.mond.setzeGefuehl('staunen');
@@ -284,7 +284,7 @@ const kapitel = [
     spiel: async (s) => {
       await s.warteBis(
         () => s.zaehle('apfelbaum-trocken') === 0 && s.zaehle('apfelbaum') > 0,
-        'giesse die vertrockneten Apfelbaeume'
+        'giesse die Apfelbaeume'
       );
       await s.warte(1.8);
 

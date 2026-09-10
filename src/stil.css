@@ -155,6 +155,22 @@ body.hat-tasche .hinweis {
   bottom: calc(104px + env(safe-area-inset-bottom));
 }
 
+/* Die Hinweiszeile als Knopf, wenn man weiterblaettern darf */
+.hinweis.antippbar {
+  pointer-events: auto;
+  cursor: pointer;
+  border-color: rgba(255, 213, 79, 0.75);
+  background: rgba(20, 24, 48, 0.88);
+}
+.hinweis.antippbar:hover { border-color: #ffd54f; }
+.weiter-pfeil {
+  margin-left: 10px;
+  padding-left: 10px;
+  border-left: 1px solid rgba(255, 233, 168, 0.3);
+  color: #ffd54f;
+  animation: atmen 1.8s ease-in-out infinite;
+}
+
 /* ---------- Tasche (was du in der Hand haeltst) ---------- */
 .tasche {
   position: fixed;

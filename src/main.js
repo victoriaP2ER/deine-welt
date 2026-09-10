@@ -211,6 +211,7 @@ async function los() {
     zeit: 0,
     gegossen: 0,
     gepflanzt: 0,
+    guteTaten: 0,
   };
 
   /* --- Der Mond sagt etwas (und wartet, bis man weitertippt) --- */
@@ -264,6 +265,26 @@ async function los() {
           wartendeAufgabe = null;
           fertig(info);
         },
+      };
+    });
+  }
+
+  /* --- PAUSE ZUM UMSEHEN -------------------------------------------
+     Nach einem schoenen Moment: in Ruhe umschauen, herumfliegen,
+     Toene spielen. Weiter geht es erst, wenn man den weiter-Knopf
+     oder Lunix antippt.                                            */
+  function warteAufUmsehen(hinweis = 'schau dich ruhig um') {
+    return new Promise((fertig) => {
+      const fertigMachen = () => {
+        ui.versteckWeiterHinweis();
+        wartendeAufgabe = null;
+        fertig();
+      };
+      ui.zeigeWeiterHinweis(hinweis, fertigMachen);
+      wartendeAufgabe = {
+        art: 'tipp',
+        typen: ['mond'],
+        treffer: fertigMachen,
       };
     });
   }
@@ -333,6 +354,31 @@ async function los() {
     speichere();
   }
 
+  /* --- GUTE TATEN ---------------------------------------------------
+     Jedes Giessen und jedes Pflanzen ist eine gute Tat. Nach jeder
+     vierten waechst der Planet ein Stueck weiter - dann hat man
+     wieder Platz fuer Neues und kann immer weitermachen.
+     Je groesser er schon ist, desto gemuetlicher waechst er.       */
+  function guteTat() {
+    zustand.guteTaten = (zustand.guteTaten || 0) + 1;
+    if (zustand.guteTaten % 4 !== 0) { speichere(); return; }
+
+    const r = planet.zielRadius;
+    const um = r < 1.4 ? 0.075 : r < 2.2 ? 0.05 : 0.03;
+    planet.wachseAuf(r + um);
+    klang.klangWachsen();
+    ui.zeigeHinweis('Der Planet ist gewachsen! Jetzt ist wieder Platz.');
+    setTimeout(() => ui.zeigeHinweis(''), 3500);
+    // ein paar Funken rundherum, damit man es merkt
+    for (let i = 0; i < 8; i++) {
+      setTimeout(() => ui.funkeAmBildschirm(
+        window.innerWidth * (0.2 + Math.random() * 0.6),
+        window.innerHeight * (0.3 + Math.random() * 0.4),
+        Math.random() > 0.5 ? '✨' : '🌱'), i * 90);
+    }
+    speichere();
+  }
+
   /* --- Funken an einer Stelle im Raum --- */
   function funkeBei(weltOrt, anzahl = 6) {
     const bildschirm = weltOrt.clone().project(kamera);
@@ -373,13 +419,14 @@ async function los() {
       }
       if (wartendeAufgabe.art === 'tipp') {
         const typ = treffer && treffer.ding.userData.typ;
-        // Am Anfang ist der Kern der "Punkt"
         const passt = treffer && wartendeAufgabe.typen.includes(typ);
         if (passt) {
           wartendeAufgabe.treffer(treffer);
         } else {
-          // daneben getippt: ein kleiner Funke und der Hinweis bleibt
-          ui.funkeAmBildschirm(x, y, '·');
+          // Etwas anderes angetippt: das darf ruhig passieren!
+          // So kann man waehrend des Suchens weitergiessen und
+          // Toene auf dem Planeten spielen.
+          freiesSpiel(treffer, x, y);
         }
       }
     },
@@ -471,6 +518,7 @@ async function los() {
     klang.klangGiessen();
     macheRegenTropfen(treffer.punkt);
     zustand.gegossen++;
+    guteTat();
 
     // trockenes Gras an dieser Stelle wird gesund
     const trockene = planet.aufgestellt.filter((o) =>
@@ -544,6 +592,17 @@ async function los() {
       planet.stelleAuf(blume, new THREE.Vector3(...ort).normalize(),
                        { einsinken: 0.004, drehung: i * 1.2 });
     });
+  }
+
+  /* --- Eine Stelle, die gerade NICHT zu sehen ist ---
+     Damit man etwas wirklich suchen muss, setzen wir es auf die
+     Seite, die von der Kamera weg zeigt. */
+  function rueckseite() {
+    const weg = kamera.position.clone().normalize().negate();
+    weg.x += wuerfel(-0.35, 0.35);
+    weg.y += wuerfel(-0.15, 0.45);
+    weg.z += wuerfel(-0.35, 0.35);
+    return planet.gruppe.worldToLocal(weg).normalize();
   }
 
   /* --- Die vertrockneten Apfelbaeume kommen zum Vorschein --- */
@@ -638,7 +697,7 @@ async function los() {
       if (b) {
         planet.maleGruen(lokal, 0.2, 0.5);
         zustand.gepflanzt++;
-        speichere();
+        guteTat();
         return;
       }
     }
@@ -656,7 +715,7 @@ async function los() {
     klang.klangAufbluehen();
     zustand.gepflanzt++;
     funkeBei(blume.getWorldPosition(new THREE.Vector3()), 4);
-    speichere();
+    guteTat();
   }
 
   /* --- etwas waechst aus dem Boden --- */
@@ -706,6 +765,7 @@ async function los() {
         radius: planet.zielRadius,
         gegossen: zustand.gegossen,
         gepflanzt: zustand.gepflanzt,
+        guteTaten: zustand.guteTaten || 0,
       }));
     } catch (e) { /* macht nichts */ }
   }
@@ -721,12 +781,12 @@ async function los() {
   const spiel = {
     THREE, szene, kamera, planet, mond, kern, wuerfel, zustand,
     ui, klang, bedienung, mondBahn, falter, blick,
-    mondSagt, warteAufTipp, warteAufStreicheln, warte, warteBis, zaehle,
+    mondSagt, warteAufTipp, warteAufStreicheln, warte, warteBis, zaehle, warteAufUmsehen,
     weckeWelt, zeigePlanet, lasseWeltWachsen, funkeBei,
-    lassWachsen, tauscheGrasAus, macheBaumAus, speichere, pflanzeBlubberBlume,
+    lassWachsen, tauscheGrasAus, macheBaumAus, speichere, pflanzeBlubberBlume, guteTat,
     giesseAn, pflanzeBlumeAn, freiesSpiel,
     stelleTrockeneBlumenAuf, verwandleBlume, machGras, eigene,
-    holeVorlage, stelleApfelbaeumeAuf, verwandleBaum,
+    holeVorlage, stelleApfelbaeumeAuf, verwandleBaum, rueckseite,
     bauer: { baueGras, baueBlume, baueBaum, baueBusch, bauePilz, baueSetzling, baueStein,
              baueSchmetterling, baueHaeschen, baueWolke, baueGiesskanne, baueSamentuete, baueSchimmer },
     setzeKapitel(n) { zustand.kapitel = n; speichere(); },

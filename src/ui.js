@@ -173,6 +173,36 @@ export function werkzeugInDerHand() { return gewaehltesWerkzeug; }
 export function beiWerkzeugWechsel(handler) { beimWerkzeugWechsel = handler; }
 export function hatWerkzeug(name) { return werkzeuge.has(name); }
 
+/* ---------- Umsehen-Pause ----------
+   Nach einem schoenen Moment darf man sich in Ruhe umsehen. Die
+   Hinweiszeile wird dann zu einem Knopf: erst wenn man ihn antippt
+   (oder Lunix), geht die Geschichte weiter.                          */
+let weiterHandler = null;
+
+export function zeigeWeiterHinweis(text, handler) {
+  weiterHandler = handler;
+  teile.hinweis.innerHTML = `${text} <span class="weiter-pfeil">weiter ▸</span>`;
+  teile.hinweis.hidden = false;
+  teile.hinweis.classList.add('antippbar');
+  letzterHinweis = '\u0000weiter';    // damit zeigeHinweis danach wieder greift
+}
+
+export function versteckWeiterHinweis() {
+  weiterHandler = null;
+  teile.hinweis.classList.remove('antippbar');
+  teile.hinweis.hidden = true;
+  teile.hinweis.textContent = '';
+  letzterHinweis = '';
+}
+
+teile.hinweis.addEventListener('pointerdown', (e) => {
+  if (!weiterHandler) return;
+  e.stopPropagation();
+  const h = weiterHandler;
+  versteckWeiterHinweis();
+  h();
+});
+
 /* ---------- Sterne fuer geschaffte Aufgaben ---------- */
 let sternZahl = 0;
 export function gibStern() {

@@ -257,9 +257,10 @@ const kapitel = [
       // Weil der Planet gewachsen ist, kommt ein Stueck von ihm zum
       // Vorschein, das vorher nicht da war: seine Apfelbaeume.
       await s.stelleApfelbaeumeAuf();
-      await s.warte(1.4);
+      await s.warte(1.2);
+      await s.mondSagt(['Warte mal ... da ist noch etwas!'], 'staunen');
+      await s.warteAufUmsehen('sieh dich um');
       await s.mondSagt([
-        'Warte mal ... da ist noch etwas!',
         'Seine Apfelbaeume! Die hatte ich ganz vergessen.',
         'Sie sind auch alle vertrocknet. Giess sie doch mal.',
       ], 'staunen');
@@ -412,6 +413,12 @@ const kapitel = [
 
       lassFalterFliegen(s, 3);
       s.klang.klangTier();
+      await s.mondSagt(['Oh! Schau mal ...'], 'staunen');
+
+      // PAUSE ZUM STAUNEN: jetzt darf man sich in Ruhe umsehen.
+      // Es geht erst weiter, wenn man Lunix antippt.
+      await s.warteAufUmsehen('schau dich um');
+
       await s.mondSagt([
         'Schmetterlinge!',
         'Die kommen nur, wenn es Blumen gibt. Sie haben deine gefunden.',
@@ -432,20 +439,47 @@ const kapitel = [
       enthuelleNeuesStueck(s, 4, false);
     },
     spiel: async (s) => {
-      await s.mondSagt(['Psst. Schau mal ganz nach oben. Aber leise!'], 'staunen');
+      await s.mondSagt([
+        'Psst! Hast du das gehoert?',
+        'Da hat sich jemand auf deinem Planeten eingerichtet.',
+        'Aber es ist schuechtern. Es sitzt irgendwo, wo du gerade nicht hinschaust.',
+      ], 'staunen');
 
+      // Das Haeschen setzt sich dorthin, wo man es NICHT sieht -
+      // man muss den Planeten drehen und es suchen.
       const hase = s.bauer.baueHaeschen({ groesse: 1, startzahl: 5 });
       hase.scale.setScalar(0.05);
-      s.planet.stelleAuf(hase, v(ORTE.haeschen), { einsinken: 0.01 });
+      const versteck = s.rueckseite();
+      s.planet.stelleAuf(hase, versteck, { einsinken: 0.01 });
       s.lassWachsen(hase, 1, 1);
       s.klang.klangTier();
-      s.funkeBei(hase.getWorldPosition(new THREE.Vector3()), 6);
-      await s.warte(1.4);
+
+      // ein leises Funkeln, damit man es findet, wenn man nah dran ist
+      const schimmer = s.bauer.baueSchimmer({ groesse: 1.2, farbe: '#ffd7e8' });
+      hase.add(schimmer);
+      const altesBeleben = hase.userData.belebe;
+      hase.userData.belebe = (zeit, schritt) => {
+        if (altesBeleben) altesBeleben(zeit, schritt);
+        schimmer.userData.belebe(zeit, schritt);
+      };
+
+      await s.warteAufTipp('haeschen', 'dreh den Planeten und suche das Haeschen');
+
+      // gefunden!
+      hase.remove(schimmer);
+      hase.userData.belebe = altesBeleben;
+      s.klang.klangTier();
+      s.funkeBei(hase.getWorldPosition(new THREE.Vector3()), 8);
+
+      await s.mondSagt(['Da ist es ja!'], 'gluecklich');
+
+      // noch eine Pause: erst mal in Ruhe angucken
+      await s.warteAufUmsehen('schau es dir an');
 
       await s.mondSagt([
         'Ein Haeschen ist eingezogen!',
         'Es hat sich einfach ein Plaetzchen gesucht und gesagt: hier bleibe ich.',
-        'Du kannst es streicheln, wenn du willst. Tipp es einfach an.',
+        'Du kannst es streicheln, wann du willst. Tipp es einfach an.',
       ], 'gluecklich');
 
       s.lasseWeltWachsen(0.09);
@@ -486,8 +520,8 @@ const kapitel = [
         'Und wenn du reden willst: tipp mich einfach an.',
       ], 'gluecklich');
 
-      s.ui.zeigeHinweis('Giesse und pflanze, so viel du magst');
-      setTimeout(() => s.ui.zeigeHinweis(''), 6000);
+      s.ui.zeigeHinweis('Giesse und pflanze, so viel du magst - er waechst weiter');
+      setTimeout(() => s.ui.zeigeHinweis(''), 8000);
     },
   },
 ];
@@ -514,6 +548,13 @@ export async function erzaehleGeschichte(spiel, gespeichert) {
     spiel.ui.setzeSterne(Math.max(0, ab - 1));
     spiel.zustand.gegossen = gespeichert.gegossen || 0;
     spiel.zustand.gepflanzt = gespeichert.gepflanzt || 0;
+    spiel.zustand.guteTaten = gespeichert.guteTaten || 0;
+    // Wenn der Planet durch viele gute Taten schon groesser war,
+    // soll er auch wieder so gross sein.
+    if (gespeichert.radius && gespeichert.radius > spiel.planet.zielRadius) {
+      spiel.planet.setzeRadius(gespeichert.radius);
+      spiel.planet.wachseAuf(gespeichert.radius);
+    }
   }
 
   for (let i = ab; i < kapitel.length; i++) {

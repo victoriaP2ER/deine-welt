@@ -149,7 +149,41 @@ export function machePlanet() {
     sachen.add(objekt);
     aufgestellt.push(objekt);
     richteAus(objekt);
+    if (objekt.userData.antippbar) gibGrosseTrefferflaeche(objekt);
     return objekt;
+  }
+
+  /* ------------------------------------------------------------------
+     GROSSE TREFFERFLAECHE
+
+     Ein Haeschen oder eine Blume ist klein - mit dem Finger auf dem
+     Handy trifft man sie kaum. Darum bekommt jedes antippbare Ding
+     einen unsichtbaren Ball drumherum, der die Beruehrung auffaengt.
+     Man sieht ihn nicht, aber man trifft viel leichter.
+     ------------------------------------------------------------------ */
+  function gibGrosseTrefferflaeche(objekt) {
+    if (objekt.userData.hatTrefferBall) return;
+    objekt.userData.hatTrefferBall = true;
+
+    // Wie gross ist das Ding ueberhaupt?
+    let hoehe = objekt.userData.hoehe;
+    if (!hoehe) {
+      const kasten = new THREE.Box3().setFromObject(objekt);
+      const groesse = kasten.getSize(new THREE.Vector3());
+      hoehe = Math.max(groesse.x, groesse.y, groesse.z) || 0.3;
+    }
+    const r = Math.max(0.16, hoehe * 0.65);
+
+    const ball = new THREE.Mesh(
+      new THREE.SphereGeometry(r, 8, 6),
+      new THREE.MeshBasicMaterial({ visible: false })
+    );
+    ball.position.y = hoehe * 0.45;
+    // Das Ding selbst wird beim Wachsen skaliert - der Ball soll
+    // dabei nicht mitschrumpfen, darum haengt er am Objekt und
+    // wird beim Antippen ueber die Elternkette gefunden.
+    objekt.add(ball);
+    objekt.userData.trefferBall = ball;
   }
 
   const hoch = new THREE.Vector3(0, 1, 0);

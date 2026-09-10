@@ -47,6 +47,8 @@ function stelleTrockenesGrasAuf(s, wieViele = 12) {
     const gras = s.bauer.baueGras({ groesse: 1, trocken: true, startzahl: i + 1 });
     s.planet.stelleAuf(gras, v(ort), { einsinken: 0.015, drehung: i * 1.3 });
   });
+  // dazu die selbst gemalten vertrockneten Blubber-Blumen
+  s.stelleTrockeneBlumenAuf();
 }
 
 /** Ein Ding zum Aufheben hinlegen - mit Funkeln, damit man es sieht */
@@ -192,6 +194,7 @@ const kapitel = [
     spiel: async (s) => {
       await s.mondSagt([
         'Schau nur, sein Gras ist ganz vertrocknet.',
+        'Und seine Blubber-Blumen haengen alle traurig herunter.',
         'Er hat so lange keinen Regen mehr gehabt.',
         'Irgendwo liegt noch meine alte Giesskanne. Dreh den Planeten mal um - sie muss auf der anderen Seite sein!',
       ], 'normal');
@@ -207,7 +210,7 @@ const kapitel = [
 
       await s.mondSagt([
         'Da ist sie ja! Die habe ich seit Ewigkeiten nicht mehr gesehen.',
-        'Tipp jetzt auf das trockene Gras. Dann giesst du es.',
+        'Tipp jetzt auf das trockene Gras oder auf eine welke Blume. Dann giesst du sie.',
       ], 'gluecklich');
     },
   },

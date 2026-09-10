@@ -36,15 +36,30 @@ async function los() {
 
   const wuerfel = machWuerfel(31337);
 
-  /* ---------- Die Blubber-Blume (selbst gemalt in Open Brush!) ---------- */
-  // Wenn die Datei fehlt, laeuft das Spiel einfach mit Papier-Blumen weiter.
+  /* ---------- Die Blubber-Blumen (selbst gemalt in Open Brush!) ----------
+     Es gibt sie zweimal: vertrocknet und aufgebluecht.
+     Wenn du eine vertrocknete giesst, verwandelt sie sich.
+     Fehlt eine Datei, laeuft das Spiel einfach ohne sie weiter.       */
   let macheBlubberBlume = null;
+  let macheTrockeneBlume = null;
+
   try {
     macheBlubberBlume = await ladeVorlage('meine-sachen/blubber-blume.glb', 0.52);
     console.log('Blubber-Blume ist da!');
   } catch (fehler) {
     console.warn('Blubber-Blume nicht gefunden, macht nichts:', fehler.message);
   }
+
+  // Die vertrocknete ist eine grosse Datei - die holen wir im
+  // Hintergrund, damit das Spiel sofort losgehen kann.
+  let trockeneBlumenGewuenscht = false;
+  ladeVorlage('meine-sachen/blubber-blume-trocken.glb', 0.5)
+    .then((fabrik) => {
+      macheTrockeneBlume = fabrik;
+      console.log('Vertrocknete Blubber-Blume ist da!');
+      if (trockeneBlumenGewuenscht) stelleTrockeneBlumenAuf();
+    })
+    .catch((fehler) => console.warn('Vertrocknete Blume nicht gefunden:', fehler.message));
   const planet = machePlanet();
   szene.add(planet.gruppe);
 
@@ -282,12 +297,18 @@ async function los() {
     const werkzeug = ui.werkzeugInDerHand();
     const typ = treffer.ding.userData.typ;
 
-    if (werkzeug === 'giesskanne' && (typ === 'boden' || typ === 'gras-trocken' || typ === 'setzling')) {
+    if (werkzeug === 'giesskanne'
+        && (typ === 'boden' || typ === 'gras-trocken' || typ === 'setzling' || typ === 'blubber-trocken')) {
       giesseAn(treffer);
       return;
     }
     if (werkzeug === 'samentuete' && typ === 'boden') {
       pflanzeBlumeAn(treffer);
+      return;
+    }
+    if (typ === 'blubber-trocken') {
+      ui.zeigeHinweis('die braucht Wasser - nimm die Giesskanne');
+      setTimeout(() => ui.zeigeHinweis(''), 2500);
       return;
     }
     if (typ === 'blubber-blume') {
@@ -317,8 +338,13 @@ async function los() {
     const trockene = planet.aufgestellt.filter((o) =>
       o.userData.typ === 'gras-trocken' && o.userData.richtung.distanceTo(lokal) < 0.36);
     for (const alt of trockene) tauscheGrasAus(alt);
-    // und aus dem gewaesserten Boden blubbert eine Blume hervor
-    if (trockene.length > 0) pflanzeBlubberBlume(lokal);
+    // vertrocknete Blubber-Blumen bluehen wieder auf
+    const welke = planet.aufgestellt.filter((o) =>
+      o.userData.typ === 'blubber-trocken' && o.userData.richtung.distanceTo(lokal) < 0.4);
+    for (const w of welke) verwandleBlume(w);
+
+    // und aus dem gewaesserten Boden blubbert eine neue Blume hervor
+    if (trockene.length > 0 && welke.length === 0) pflanzeBlubberBlume(lokal);
     // ein Setzling wird zum Baum
     const setzlinge = planet.aufgestellt.filter((o) =>
       o.userData.typ === 'setzling' && o.userData.richtung.distanceTo(lokal) < 0.3);
@@ -345,6 +371,42 @@ async function los() {
     lassWachsen(baum, 1, 1.6);
     klang.klangWachsen();
     funkeBei(baum.getWorldPosition(new THREE.Vector3()), 8);
+  }
+
+  /* --- Die vertrockneten Blubber-Blumen hinstellen --- */
+  const TROCKENE_BLUMEN_ORTE = [
+    [0.55, 0.36, 0.75], [-0.62, 0.3, 0.72], [0.2, -0.5, 0.84],
+    [-0.35, 0.72, -0.6], [0.78, -0.15, -0.6],
+  ];
+  let trockeneBlumenStehen = false;
+  function stelleTrockeneBlumenAuf() {
+    trockeneBlumenGewuenscht = true;
+    if (!macheTrockeneBlume || trockeneBlumenStehen) return;
+    trockeneBlumenStehen = true;
+    TROCKENE_BLUMEN_ORTE.forEach((ort, i) => {
+      const blume = macheTrockeneBlume();
+      blume.userData.typ = 'blubber-trocken';
+      blume.userData.antippbar = true;
+      planet.stelleAuf(blume, new THREE.Vector3(...ort).normalize(),
+                       { einsinken: 0.004, drehung: i * 1.2 });
+    });
+  }
+
+  /* --- Aus vertrocknet wird aufgebluecht --- */
+  function verwandleBlume(alteBlume) {
+    const richtung = alteBlume.userData.richtung.clone();
+    const drehung = alteBlume.userData.eigenDrehung || 0;
+    planet.nimmWeg(alteBlume);
+    if (!macheBlubberBlume) return null;
+    const neue = macheBlubberBlume();
+    neue.userData.typ = 'blubber-blume';
+    neue.userData.antippbar = true;
+    neue.scale.setScalar(0.02);
+    planet.stelleAuf(neue, richtung, { einsinken: 0.004, drehung });
+    lassWachsen(neue, 1, 1.4);
+    klang.klangWachsen();
+    funkeBei(neue.getWorldPosition(new THREE.Vector3()), 10);
+    return neue;
   }
 
   /* --- Die selbst gemalte Blubber-Blume waechst aus dem nassen Boden --- */
@@ -460,6 +522,7 @@ async function los() {
     weckeWelt, zeigePlanet, lasseWeltWachsen, funkeBei,
     lassWachsen, tauscheGrasAus, macheBaumAus, speichere, pflanzeBlubberBlume,
     giesseAn, pflanzeBlumeAn, freiesSpiel,
+    stelleTrockeneBlumenAuf, verwandleBlume,
     bauer: { baueGras, baueBlume, baueBaum, baueBusch, bauePilz, baueSetzling, baueStein,
              baueSchmetterling, baueHaeschen, baueWolke, baueGiesskanne, baueSamentuete, baueSchimmer },
     setzeKapitel(n) { zustand.kapitel = n; speichere(); },

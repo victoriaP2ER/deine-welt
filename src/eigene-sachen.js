@@ -39,19 +39,37 @@ function ladeGlb(quelle) {
  * dass sie mit den Fuessen auf dem Boden stehen.
  */
 function machePassend(modell, zielHoehe = 0.55) {
-  // Materialien: von beiden Seiten sichtbar, damit nichts verschwindet
+  /* Open-Brush-Zeichnungen brauchen eine kleine Kur, damit sie hier
+     genauso aussehen wie in der Brille:
+
+     - metalness: glTF sagt standardmaessig "das ist Metall". Ohne eine
+       Spiegel-Umgebung wird Metall aber pechschwarz. Also: kein Metall.
+     - schwarze Grundfarbe: manche Pinsel bringen color = schwarz mit.
+       Weil die echte Farbe in den Ecken (vertex colors) steckt, wuerde
+       schwarz alles ausloeschen. Also auf weiss setzen.
+     - beide Seiten sichtbar, weil Pinselstriche papierdünn sind.        */
   modell.traverse((teil) => {
     if (!teil.isMesh) return;
     teil.castShadow = false;
     teil.receiveShadow = false;
+    const hatEckenFarben = !!(teil.geometry && teil.geometry.attributes.color);
     const materialien = Array.isArray(teil.material) ? teil.material : [teil.material];
     for (const m of materialien) {
       if (!m) continue;
       m.side = THREE.DoubleSide;
-      if (teil.geometry && teil.geometry.attributes.color) m.vertexColors = true;
-      // Open Brush malt oft mit leuchtenden Pinseln
-      if (m.emissive && m.emissiveIntensity === 0) m.emissiveIntensity = 0.15;
-      m.transparent = m.transparent || false;
+      if (hatEckenFarben) m.vertexColors = true;
+      if ('metalness' in m) m.metalness = 0;
+      if ('roughness' in m) m.roughness = Math.max(0.75, m.roughness || 0);
+      // schwarze Grundfarbe wuerde die Eckenfarben ausloeschen
+      if (hatEckenFarben && m.color) {
+        const helligkeit = m.color.r + m.color.g + m.color.b;
+        if (helligkeit < 0.12) m.color.setRGB(1, 1, 1);
+      }
+      // Pinselstriche in Open Brush leuchten ein wenig von sich aus
+      if (m.emissive && m.emissive.getHex() === 0x000000) {
+        m.emissive.setRGB(1, 1, 1);
+        m.emissiveIntensity = 0.1;
+      }
     }
   });
 

@@ -69,9 +69,9 @@ export function baueMond() {
   {
     const w = machWuerfel(4711);
     const ringSorten = [
-      { r: RADIUS * 1.9,  stuecke: 30, laenge: 0.2,  farbe: '#f7dfae' },
-      { r: RADIUS * 2.45, stuecke: 34, laenge: 0.17, farbe: '#d6b4ea' },
-      { r: RADIUS * 2.95, stuecke: 26, laenge: 0.13, farbe: '#a8cdf0' },
+      { r: RADIUS * 1.75, stuecke: 28, laenge: 0.18, farbe: '#f7dfae' },
+      { r: RADIUS * 2.15, stuecke: 32, laenge: 0.15, farbe: '#d6b4ea' },
+      { r: RADIUS * 2.5,  stuecke: 24, laenge: 0.12, farbe: '#a8cdf0' },
     ];
     const gebacken = new THREE.Group();
     for (const sorte of ringSorten) {

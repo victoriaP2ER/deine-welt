@@ -856,7 +856,7 @@ async function los() {
         mondBahn.erzaehlNaehe, blick.schautZuLunix ? 1 : 0,
         1 - Math.pow(0.05, schritt));
 
-      const r = Math.max(2.9, planet.radius * 2.5 + 2.5)
+      const r = Math.max(2.4, planet.radius * 2.0 + 1.9)
                 * (1 + mondBahn.erzaehlNaehe * 0.22);
       mond.position.set(
         Math.cos(mondBahn.winkel) * r,
@@ -873,20 +873,23 @@ async function los() {
     if (blick.schautZuLunix) {
       // Der Blick geht auf einen Punkt zwischen Planet und Lunix -
       // aber naeher am Planeten, damit die Welt die Hauptrolle behaelt.
-      blick.zielZiel.copy(mond.position).multiplyScalar(0.3);
-      blick.zielAbstand = 3.3 + planet.radius * 2.6 + mond.position.length() * 0.5;
+      blick.zielZiel.copy(mond.position).multiplyScalar(0.5);
+      blick.zielAbstand = 2.9 + planet.radius * 2.4 + mond.position.length() * 0.7;
 
       // Die Kamera stellt sich SCHRAEG neben Lunix - dann stehen
       // Planet und Lunix nebeneinander im Bild, statt hintereinander.
       const mondSeite = Math.atan2(mond.position.x, mond.position.z);
-      let unterschied = (mondSeite - 0.8) - blick.seite;
+      let unterschied = (mondSeite - 0.42) - blick.seite;
       while (unterschied > Math.PI) unterschied -= Math.PI * 2;
       while (unterschied < -Math.PI) unterschied += Math.PI * 2;
       blick.seite += unterschied * (1 - Math.pow(0.35, schritt));
 
       const laenge = mond.position.length() || 1;
       const mondHoch = Math.asin(THREE.MathUtils.clamp(mond.position.y / laenge, -1, 1));
-      blick.hoch += (mondHoch * 0.35 + 0.12 - blick.hoch) * (1 - Math.pow(0.4, schritt));
+      // Die Kamera hebt sich fast auf Lunix' Hoehe. Dadurch steht er
+      // ungefaehr in der Bildmitte - und ueber ihm ist Platz fuer die
+      // Sprechblase, statt dass sie ihn verdeckt.
+      blick.hoch += (mondHoch * 0.75 + 0.04 - blick.hoch) * (1 - Math.pow(0.4, schritt));
     } else {
       blick.zielZiel.set(0, 0, 0);
       blick.zielAbstand = zustand.schlaeft ? 4.6 : 2.15 + planet.radius * 2.6;
@@ -902,7 +905,7 @@ async function los() {
       const p = mondOrt.clone().project(kamera);
       ui.setzeBlaseAn(
         (p.x * 0.5 + 0.5) * window.innerWidth,
-        (-p.y * 0.5 + 0.5) * window.innerHeight - 110
+        (-p.y * 0.5 + 0.5) * window.innerHeight - 95
       );
     }
 

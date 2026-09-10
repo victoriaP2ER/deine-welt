@@ -138,11 +138,13 @@ export function macheBedienung({ szene, blick, beiTipp, beiStreicheln }) {
   function belebe(schritt) {
     if (z.zieht) return;
 
-    // Schwung ausrollen lassen
-    if (Math.abs(blick.schwungSeite) > 0.02 || Math.abs(blick.schwungHoch) > 0.02) {
-      fliege(blick.schwungSeite * 0.55, blick.schwungHoch * 0.55);
-      blick.schwungSeite *= 0.92;
-      blick.schwungHoch *= 0.92;
+    // Schwung sanft ausrollen lassen.
+    // (Vorher zog es viel zu weit nach - dadurch passte die Bewegung
+    //  nicht mehr zum Finger.)
+    if (Math.abs(blick.schwungSeite) > 0.05 || Math.abs(blick.schwungHoch) > 0.05) {
+      fliege(blick.schwungSeite * 0.22, blick.schwungHoch * 0.22);
+      blick.schwungSeite *= 0.86;
+      blick.schwungHoch *= 0.86;
     } else {
       z.ruhe += schritt;
       if (z.ruhe > 3.5) z.fliegtSelbst = true;

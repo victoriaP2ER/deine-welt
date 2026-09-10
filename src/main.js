@@ -129,10 +129,10 @@ async function los() {
   // Vertrocknet ist absichtlich viel kleiner als gesund - dann sieht
   // man beim Giessen richtig, wie es aufwaechst.
   const DATEIEN = {
-    grasTrocken:  ['meine-sachen/gras-trocken.glb', 0.22],
-    grasGesund:   ['meine-sachen/gras-gesund.glb', 0.55],
-    blumeTrocken: ['meine-sachen/blubber-blume-trocken.glb', 0.26],
-    blumeGesund:  ['meine-sachen/blubber-blume.glb', 0.68],
+    grasTrocken:  ['meine-sachen/gras-trocken.glb', 0.13],
+    grasGesund:   ['meine-sachen/gras-gesund.glb', 0.27],
+    blumeTrocken: ['meine-sachen/blubber-blume-trocken.glb', 0.2],
+    blumeGesund:  ['meine-sachen/blubber-blume.glb', 0.48],
     baumTrocken:  ['meine-sachen/apfelbaum-trocken.glb', 0.5],
     baumGesund:   ['meine-sachen/apfelbaum.glb', 1.2],
   };

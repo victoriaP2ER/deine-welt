@@ -116,10 +116,12 @@ function stelleAufPlanet(spiel, modell, richtung) {
   return modell;
 }
 
-/** Die Stelle, die gerade zu dir zeigt */
+/** Die Stelle des Planeten, die gerade zu dir zeigt.
+    Weil die Kamera um den Planeten fliegt, ist das einfach die
+    Richtung, in der die Kamera steht. */
 function vorderseite(spiel) {
-  const welt = new THREE.Vector3(0, 0.3, 1).normalize();
-  return spiel.planet.gruppe.worldToLocal(welt.clone()).normalize();
+  const zurKamera = spiel.kamera.position.clone().normalize();
+  return spiel.planet.gruppe.worldToLocal(zurKamera.multiplyScalar(1)).normalize();
 }
 
 /* ================================================================

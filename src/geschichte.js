@@ -500,6 +500,9 @@ export async function erzaehleGeschichte(spiel, gespeichert) {
 
   if (gespeichert && gespeichert.kapitel > 0) {
     ab = Math.min(gespeichert.kapitel, kapitel.length - 1);
+    // Die Welt ist schon wach: kein Titel, und der Planet ist da.
+    spiel.ui.versteckTitel();
+    spiel.zustand.schlaeft = false;
     // Die Welt so herstellen, wie sie am Ende des letzten Kapitels war
     for (let i = 0; i < ab; i++) {
       try {

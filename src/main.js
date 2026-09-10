@@ -73,12 +73,38 @@ async function los() {
 
   const mondBahn = {
     winkel: 0,
-    radius: 1.9,
-    neigung: 0.42,
-    geschwindigkeit: 0.19,
-    modus: 'bahn',        // 'bahn' oder 'buehne'
-    buehneSeite: 1,
+    neigung: 0.5,
+    geschwindigkeit: 0.15,
   };
+
+  /* ---------- DER BLICK: wo ist die Kamera, wohin schaut sie? ----------
+     Die Kamera haengt an einem unsichtbaren Faden um den Planeten.
+     "seite" und "hoch" sind die Winkel, "abstand" die Entfernung.
+     Beim Wischen aendern sich die Winkel - dadurch fliegt die Kamera
+     um den Planeten herum und die Sterne ziehen vorbei.               */
+  const blick = {
+    seite: 0,
+    hoch: 0.16,
+    abstand: 4.6,
+    zielAbstand: 4.6,
+    schwungSeite: 0,
+    schwungHoch: 0,
+    ziel: new THREE.Vector3(0, 0, 0),        // wohin die Kamera schaut
+    zielZiel: new THREE.Vector3(0, 0, 0),    // wohin sie schauen soll
+    schautZuLunix: false,
+  };
+
+  /** Setzt die Kamera aus den Winkeln zusammen. */
+  function stelleKameraEin() {
+    const r = blick.abstand;
+    kamera.position.set(
+      Math.cos(blick.hoch) * Math.sin(blick.seite) * r,
+      Math.sin(blick.hoch) * r,
+      Math.cos(blick.hoch) * Math.cos(blick.seite) * r
+    );
+    kamera.lookAt(blick.ziel);
+  }
+  stelleKameraEin();
 
   /* ---------- Schmetterlinge fliegen frei um den Planeten ---------- */
   const falter = [];
@@ -186,7 +212,7 @@ async function los() {
   function mondSagt(saetze, gefuehl = 'normal') {
     const liste = Array.isArray(saetze) ? saetze : [saetze];
     return new Promise((fertig) => {
-      mondBahn.modus = 'buehne';
+      blick.schautZuLunix = true;      // die Kamera schwenkt zu ihm hoch
       mond.setzeGefuehl(gefuehl);
       let i = 0;
 
@@ -211,7 +237,7 @@ async function los() {
             ui.versteckBlase();
             ui.zeigeHinweis('');
             wartendeAufgabe = null;
-            mondBahn.modus = 'bahn';
+            blick.schautZuLunix = false;   // und wieder runter zur Welt
             fertig();
           }
         },
@@ -283,6 +309,7 @@ async function los() {
   function weckeWelt() {
     zustand.schlaeft = false;
     klang.klangErwachen();
+    klang.starteMusik();        // ab jetzt spielt die Weltraum-Musik
     ui.versteckTitel();
   }
 
@@ -321,10 +348,12 @@ async function los() {
      BEDIENUNG
      ================================================================ */
   const bedienung = macheBedienung({
-    planetGruppe: planet.gruppe,
+    blick,
     szene,
     beiTipp: ({ treffer, x, y }) => {
       klang.weckeTon();
+      // Musik anwerfen (passiert nur beim ersten Mal etwas)
+      if (!zustand.schlaeft) klang.starteMusik();
       if (!wartendeAufgabe) {
         // freies Spiel: giessen oder pflanzen, wenn ein Werkzeug in der Hand ist
         freiesSpiel(treffer, x, y);
@@ -418,6 +447,15 @@ async function los() {
     }
     if (typ === 'mond') {
       plaudereMitDemMond();
+      return;
+    }
+    if (typ === 'boden' || typ === 'gras-gesund' || typ === 'blume'
+        || typ === 'busch' || typ === 'pilz' || typ === 'stein') {
+      // Der Planet klingt! Oben klingt er hell, unten tief -
+      // man kann richtig darauf spielen.
+      const lokal = planet.gruppe.worldToLocal(treffer.punkt.clone()).normalize();
+      klang.klangPlanetTippen((lokal.y + 1) / 2);
+      ui.funkeAmBildschirm(x, y, '♪');
     }
   }
 
@@ -547,7 +585,7 @@ async function los() {
     neu.scale.setScalar(0.15);
     planet.stelleAuf(neu, richtung, { einsinken: 0.012, drehung });
     lassWachsen(neu, 1, 1.8);
-    klang.klangWachsen();
+    klang.klangBaumWaechst();
     funkeBei(neu.getWorldPosition(new THREE.Vector3()), 12);
     return neu;
   }
@@ -564,7 +602,7 @@ async function los() {
     neue.scale.setScalar(0.02);
     planet.stelleAuf(neue, richtung, { einsinken: 0.004, drehung });
     lassWachsen(neue, 1, 1.4);
-    klang.klangWachsen();
+    klang.klangAufbluehen();
     funkeBei(neue.getWorldPosition(new THREE.Vector3()), 10);
     return neue;
   }
@@ -610,7 +648,7 @@ async function los() {
     lassWachsen(blume, 1, 1.1);
     planet.maleGruen(lokal, 0.2, 0.5);
     klang.klangPlopp();
-    klang.klangFunke();
+    klang.klangAufbluehen();
     zustand.gepflanzt++;
     funkeBei(blume.getWorldPosition(new THREE.Vector3()), 4);
     speichere();
@@ -677,7 +715,7 @@ async function los() {
      ================================================================ */
   const spiel = {
     THREE, szene, kamera, planet, mond, kern, wuerfel, zustand,
-    ui, klang, bedienung, mondBahn, falter,
+    ui, klang, bedienung, mondBahn, falter, blick,
     mondSagt, warteAufTipp, warteAufStreicheln, warte, warteBis, zaehle,
     weckeWelt, zeigePlanet, lasseWeltWachsen, funkeBei,
     lassWachsen, tauscheGrasAus, macheBaumAus, speichere, pflanzeBlubberBlume,
@@ -714,7 +752,6 @@ async function los() {
      ================================================================ */
   const uhr = new THREE.Clock();
   const mondOrt = new THREE.Vector3();
-  let kameraAbstand = 4.6;
 
   function bild() {
     const schritt = Math.min(uhr.getDelta(), 0.05);
@@ -733,33 +770,54 @@ async function los() {
     kernKugel.scale.setScalar(THREE.MathUtils.lerp(kernKugel.scale.x, puls, 0.1));
     glanz.material.opacity = zustand.schlaeft ? 0.95 : Math.max(0, 0.5 - planet.radius * 0.5);
 
-    /* --- Mondbahn --- */
-    if (mondBahn.modus === 'bahn') {
-      mondBahn.winkel += schritt * mondBahn.geschwindigkeit;
-      const r = Math.max(1.75, planet.radius * 2.1 + 1.35);
-      // Die Bahn ist nach vorne gezogen und geneigt: so verschwindet
-      // der Mond nie lange hinter dem Planeten.
-      const ziel = new THREE.Vector3(
+    /* --- Lunix zieht seine Bahn um den Planeten --- */
+    mondBahn.winkel += schritt * mondBahn.geschwindigkeit;
+    {
+      const r = Math.max(2.6, planet.radius * 2.2 + 2.35);
+      mond.position.set(
         Math.cos(mondBahn.winkel) * r,
-        Math.sin(mondBahn.winkel * 1.3) * r * mondBahn.neigung,
-        Math.sin(mondBahn.winkel) * r * 0.45 + r * 0.3
+        Math.sin(mondBahn.winkel * 0.85) * r * mondBahn.neigung,
+        Math.sin(mondBahn.winkel) * r
       );
-      mond.position.lerp(ziel, 1 - Math.pow(0.02, schritt));
+    }
+    if (mond.userData.belebe) mond.userData.belebe(zeit, schritt, kamera.position);
+
+    /* --- Die Kamera fliegt um den Planeten und schaut zur Mitte.
+           Wenn Lunix redet, schwenkt sie zu ihm hoch - und danach
+           wieder runter auf die Welt.                              --- */
+    if (blick.schautZuLunix) {
+      blick.zielZiel.copy(mond.position).multiplyScalar(0.5);
+      blick.zielAbstand = 2.6 + planet.radius * 2.5 + mond.position.length() * 0.42;
+
+      // sanft in Lunix' Richtung schwenken, damit er nicht hinter
+      // dem Planeten verschwindet
+      const mondSeite = Math.atan2(mond.position.x, mond.position.z);
+      let unterschied = mondSeite - blick.seite;
+      while (unterschied > Math.PI) unterschied -= Math.PI * 2;
+      while (unterschied < -Math.PI) unterschied += Math.PI * 2;
+      blick.seite += unterschied * (1 - Math.pow(0.35, schritt));
+
+      const laenge = mond.position.length() || 1;
+      const mondHoch = Math.asin(THREE.MathUtils.clamp(mond.position.y / laenge, -1, 1));
+      blick.hoch += (mondHoch * 0.45 + 0.1 - blick.hoch) * (1 - Math.pow(0.4, schritt));
     } else {
-      // Buehne: gut sichtbar vor der Kamera, etwas zur Seite
-      const ziel = kamera.localToWorld(new THREE.Vector3(
-        0.5 * mondBahn.buehneSeite, 0.14, -3.05
-      ));
-      mond.position.lerp(ziel, 1 - Math.pow(0.004, schritt));
-      // Die Sprechblase folgt dem Mond
+      blick.zielZiel.set(0, 0, 0);
+      blick.zielAbstand = zustand.schlaeft ? 4.6 : 2.15 + planet.radius * 2.6;
+    }
+    blick.ziel.lerp(blick.zielZiel, 1 - Math.pow(0.01, schritt));
+    blick.abstand = THREE.MathUtils.lerp(blick.abstand, blick.zielAbstand,
+                                         1 - Math.pow(0.06, schritt));
+    stelleKameraEin();
+
+    /* --- Die Sprechblase klebt an Lunix --- */
+    if (blick.schautZuLunix) {
       mond.getWorldPosition(mondOrt);
       const p = mondOrt.clone().project(kamera);
       ui.setzeBlaseAn(
         (p.x * 0.5 + 0.5) * window.innerWidth,
-        (-p.y * 0.5 + 0.5) * window.innerHeight - 150
+        (-p.y * 0.5 + 0.5) * window.innerHeight - 110
       );
     }
-    if (mond.userData.belebe) mond.userData.belebe(zeit, schritt, kamera.position);
 
     /* --- Schmetterlinge --- */
     for (const f of falter) {
@@ -807,12 +865,6 @@ async function los() {
         tropfenFlug.splice(i, 1);
       }
     }
-
-    /* --- Kamera weicht zurueck, wenn die Welt waechst --- */
-    const zielAbstand = zustand.schlaeft ? 4.6 : 2.05 + planet.radius * 2.5;
-    kameraAbstand = THREE.MathUtils.lerp(kameraAbstand, zielAbstand, 1 - Math.pow(0.2, schritt));
-    kamera.position.set(0, kameraAbstand * 0.16, kameraAbstand);
-    kamera.lookAt(0, 0, 0);
 
     maler.render(szene, kamera);
     requestAnimationFrame(bild);

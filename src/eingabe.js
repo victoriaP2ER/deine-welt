@@ -1,6 +1,11 @@
 /* ==================================================================
-   BEDIENUNG - Ziehen dreht den Planeten, Tippen fasst etwas an.
-   Funktioniert mit Maus und mit dem Finger.
+   BEDIENUNG
+
+   Wischen laesst die KAMERA um den Planeten fliegen - der Planet
+   selbst steht still. Darum ziehen auch die Sterne im Hintergrund
+   vorbei, so als wuerde man wirklich um ihn herumfliegen.
+
+   Der Blick zeigt dabei immer zur Mitte.
    ================================================================== */
 
 import * as THREE from 'three';
@@ -8,7 +13,7 @@ import { kamera } from './szene.js';
 
 const leinwand = document.getElementById('buehne');
 
-export function macheBedienung({ planetGruppe, szene, beiTipp, beiStreicheln }) {
+export function macheBedienung({ szene, blick, beiTipp, beiStreicheln }) {
   const zeiger = new THREE.Vector2();
   const strahl = new THREE.Raycaster();
 
@@ -19,10 +24,8 @@ export function macheBedienung({ planetGruppe, szene, beiTipp, beiStreicheln }) 
     letzteY: 0,
     startX: 0,
     startY: 0,
-    schwungX: 0,
-    schwungY: 0,
     ruhe: 0,
-    dreheSelbst: true,
+    fliegtSelbst: true,
     gesperrt: false,
     streichelErlaubt: false,
     letzteStreichelZeit: 0,
@@ -36,8 +39,8 @@ export function macheBedienung({ planetGruppe, szene, beiTipp, beiStreicheln }) 
     const treffer = strahl.intersectObjects(szene.children, true);
     for (const t of treffer) {
       if (!t.object.visible) continue;
-      // von dem getroffenen Papierstueck nach oben suchen,
-      // zu welchem Ding es gehoert
+      // Von dem getroffenen Stueck nach oben suchen, zu welchem
+      // Ding es gehoert.
       let o = t.object;
       while (o) {
         if (o.userData && o.userData.typ) {
@@ -49,23 +52,6 @@ export function macheBedienung({ planetGruppe, szene, beiTipp, beiStreicheln }) 
     return null;
   }
 
-  /* ---------- Drehen ---------- */
-  const drehachseHoch = new THREE.Vector3(0, 1, 0);
-  const drehachseSeite = new THREE.Vector3();
-  const drehung = new THREE.Quaternion();
-
-  function drehe(dx, dy) {
-    const staerke = 0.0055;
-    // um die Hoch-Achse der Welt
-    drehung.setFromAxisAngle(drehachseHoch, dx * staerke);
-    planetGruppe.quaternion.premultiply(drehung);
-    // um die Achse, die auf dem Bildschirm nach rechts zeigt
-    kamera.getWorldDirection(drehachseSeite);
-    drehachseSeite.cross(drehachseHoch).normalize();
-    drehung.setFromAxisAngle(drehachseSeite, -dy * staerke);
-    planetGruppe.quaternion.premultiply(drehung);
-  }
-
   /* ---------- Finger runter ---------- */
   leinwand.addEventListener('pointerdown', (e) => {
     if (z.gesperrt) return;
@@ -73,8 +59,9 @@ export function macheBedienung({ planetGruppe, szene, beiTipp, beiStreicheln }) 
     z.hatGezogen = false;
     z.letzteX = z.startX = e.clientX;
     z.letzteY = z.startY = e.clientY;
-    z.schwungX = z.schwungY = 0;
-    z.dreheSelbst = false;
+    blick.schwungSeite = 0;
+    blick.schwungHoch = 0;
+    z.fliegtSelbst = false;
     z.ruhe = 0;
     try {
       leinwand.setPointerCapture(e.pointerId);
@@ -95,7 +82,7 @@ export function macheBedienung({ planetGruppe, szene, beiTipp, beiStreicheln }) 
     if (weg > 8) z.hatGezogen = true;
 
     if (z.streichelErlaubt) {
-      // Streicheln: nicht drehen, sondern kraulen
+      // Streicheln: nicht fliegen, sondern kraulen
       const jetzt = performance.now();
       if (jetzt - z.letzteStreichelZeit > 55 && (Math.abs(dx) + Math.abs(dy)) > 2) {
         z.letzteStreichelZeit = jetzt;
@@ -105,10 +92,20 @@ export function macheBedienung({ planetGruppe, szene, beiTipp, beiStreicheln }) 
       return;
     }
 
-    drehe(dx, dy);
-    z.schwungX = dx;
-    z.schwungY = dy;
+    fliege(dx, dy);
+    blick.schwungSeite = dx;
+    blick.schwungHoch = dy;
   });
+
+  /* ---------- die Kamera um den Planeten bewegen ---------- */
+  function fliege(dx, dy) {
+    const staerke = 0.0052;
+    blick.seite -= dx * staerke;
+    blick.hoch = THREE.MathUtils.clamp(
+      blick.hoch + dy * staerke,
+      -1.25, 1.25         // nicht ueber die Pole hinaus
+    );
+  }
 
   /* ---------- Finger hoch ---------- */
   function fingerHoch(e) {
@@ -125,19 +122,20 @@ export function macheBedienung({ planetGruppe, szene, beiTipp, beiStreicheln }) 
 
   /* ---------- jedes Bild ---------- */
   function belebe(schritt) {
-    if (!z.zieht) {
-      // Schwung ausrollen lassen
-      if (Math.abs(z.schwungX) > 0.02 || Math.abs(z.schwungY) > 0.02) {
-        drehe(z.schwungX * 0.55, z.schwungY * 0.55);
-        z.schwungX *= 0.92;
-        z.schwungY *= 0.92;
-      } else {
-        z.ruhe += schritt;
-        if (z.ruhe > 3.5) z.dreheSelbst = true;
-      }
-      // wenn lange nichts passiert: der Planet dreht sich gemuetlich weiter
-      if (z.dreheSelbst) drehe(0.16, 0);
+    if (z.zieht) return;
+
+    // Schwung ausrollen lassen
+    if (Math.abs(blick.schwungSeite) > 0.02 || Math.abs(blick.schwungHoch) > 0.02) {
+      fliege(blick.schwungSeite * 0.55, blick.schwungHoch * 0.55);
+      blick.schwungSeite *= 0.92;
+      blick.schwungHoch *= 0.92;
+    } else {
+      z.ruhe += schritt;
+      if (z.ruhe > 3.5) z.fliegtSelbst = true;
     }
+
+    // Wenn lange nichts passiert, zieht die Kamera gemuetlich weiter
+    if (z.fliegtSelbst) blick.seite -= 0.013 * schritt;
   }
 
   return {
@@ -145,6 +143,6 @@ export function macheBedienung({ planetGruppe, szene, beiTipp, beiStreicheln }) 
     wasIstDa,
     sperre(an) { z.gesperrt = an; },
     erlaubeStreicheln(an) { z.streichelErlaubt = an; leinwand.classList.toggle('streicheln', an); },
-    stopEigendrehung() { z.dreheSelbst = false; z.ruhe = 0; },
+    stopEigendrehung() { z.fliegtSelbst = false; z.ruhe = 0; },
   };
 }

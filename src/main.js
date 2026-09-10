@@ -227,7 +227,11 @@ async function los() {
         ui.sagText(liste[i], {
           beiFertig: () => mond.redeAn(false),
         });
-        ui.zeigeHinweis(i < liste.length - 1 ? 'tippe die Blase an' : '');
+        // Unten steht ein weiter-Knopf. Man kann ihn antippen, die
+        // Sprechblase, oder einfach irgendwo aufs Bild - alles geht.
+        ui.zeigeWeiterHinweis('', () => {
+          if (wartendeAufgabe && wartendeAufgabe.art === 'blase') wartendeAufgabe.weiter();
+        });
       };
 
       wartendeAufgabe = {
@@ -486,32 +490,33 @@ async function los() {
       ui.funkeAmBildschirm(x, y, '🍎');
       return;
     }
-    if (typ === 'blubber-trocken') {
-      ui.zeigeHinweis('die braucht Wasser - nimm die Giesskanne');
-      setTimeout(() => ui.zeigeHinweis(''), 2500);
-      return;
-    }
-    if (typ === 'blubber-blume') {
-      klang.klangFunke();
-      ui.funkeAmBildschirm(x, y, '🫧');
-      return;
-    }
-    if (typ === 'haeschen') {
-      klang.klangTier();
-      ui.funkeAmBildschirm(x, y, '💚');
-      return;
-    }
     if (typ === 'mond') {
       plaudereMitDemMond();
       return;
     }
-    if (typ === 'boden' || typ === 'gras-gesund' || typ === 'blume'
-        || typ === 'busch' || typ === 'pilz' || typ === 'stein') {
-      // Der Planet klingt! Oben klingt er hell, unten tief -
-      // man kann richtig darauf spielen.
-      const lokal = planet.gruppe.worldToLocal(treffer.punkt.clone()).normalize();
-      klang.klangPlanetTippen((lokal.y + 1) / 2);
-      ui.funkeAmBildschirm(x, y, '♪');
+
+    /* ---------- ALLES KLINGT ----------
+       Jedes Ding hat seinen eigenen Klang, und die Tonhoehe haengt
+       davon ab, wo es auf dem Planeten steht: oben hell, unten tief.
+       So kann man sich eigene Melodien spielen.                     */
+    const lokal = planet.gruppe.worldToLocal(treffer.punkt.clone()).normalize();
+    const hoehenAnteil = (lokal.y + 1) / 2;
+    klang.klangDing(typ, hoehenAnteil);
+
+    // ein passendes Zeichen dazu
+    const zeichen = {
+      wolke: '💧', haeschen: '💚', schmetterling: '✨',
+      'blubber-blume': '🌸', 'blubber-trocken': '🥀',
+      apfelbaum: '🍎', 'apfelbaum-trocken': '🍂',
+      blume: '🌸', pilz: '🍄', stein: '·',
+    }[typ] || '♪';
+    ui.funkeAmBildschirm(x, y, zeichen);
+
+    // Ein vertrocknetes Ding sagt ausserdem, was es braucht
+    if (typ === 'blubber-trocken' || typ === 'apfelbaum-trocken' || typ === 'gras-trocken') {
+      if (!ui.hatWerkzeug('giesskanne')) return;
+      ui.zeigeHinweis('nimm die Giesskanne, dann kannst du es giessen');
+      setTimeout(() => ui.zeigeHinweis(''), 2500);
     }
   }
 
@@ -831,7 +836,7 @@ async function los() {
     belebeSterne(zeit);
     blick.griffRadius = Math.max(0.35, planet.radius);
     bedienung.belebe(schritt);
-    planet.belebe(zeit, schritt);
+    planet.belebe(zeit, schritt, kamera.position);
 
     /* --- der leuchtende Punkt --- */
     const puls = 1 + Math.sin(zeit * 1.8) * 0.12 + Math.sin(zeit * 4.3) * 0.05;

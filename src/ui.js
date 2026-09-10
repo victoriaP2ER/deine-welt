@@ -105,6 +105,7 @@ export function versteckBlase() {
   clearInterval(schreibUhr);
   teile.blase.classList.remove('da', 'reinpoppen');
   teile.blase.hidden = true;
+  versteckWeiterHinweis();
 }
 
 /** Die Blase soll dort sein, wo der Mond ist. */
@@ -181,7 +182,9 @@ let weiterHandler = null;
 
 export function zeigeWeiterHinweis(text, handler) {
   weiterHandler = handler;
-  teile.hinweis.innerHTML = `${text} <span class="weiter-pfeil">weiter ▸</span>`;
+  teile.hinweis.innerHTML = text
+    ? `${text} <span class="weiter-pfeil">weiter ▸</span>`
+    : '<span class="weiter-pfeil nur-weiter">weiter ▸</span>';
   teile.hinweis.hidden = false;
   teile.hinweis.classList.add('antippbar');
   letzterHinweis = '\u0000weiter';    // damit zeigeHinweis danach wieder greift

@@ -219,14 +219,16 @@ export function machePlanet() {
   }
 
   /* ---------- jedes Bild ---------- */
-  function belebe(zeit, schritt) {
+  function belebe(zeit, schritt, kameraOrt) {
     // sanft zur Zielgroesse wachsen
     if (Math.abs(zustand.radius - zustand.zielRadius) > 0.0004) {
       const neu = THREE.MathUtils.lerp(zustand.radius, zustand.zielRadius, 1 - Math.pow(0.004, schritt));
       setzeRadius(neu);
     }
+    // Die Kameraposition wird weitergegeben: Dinge mit Gesicht
+    // koennen sich damit zum Betrachter drehen.
     for (const o of aufgestellt) {
-      if (o.userData.belebe) o.userData.belebe(zeit, schritt);
+      if (o.userData.belebe) o.userData.belebe(zeit, schritt, kameraOrt);
     }
   }
 

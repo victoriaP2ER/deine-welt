@@ -170,6 +170,13 @@ body.hat-tasche .hinweis {
   color: #ffd54f;
   animation: atmen 1.8s ease-in-out infinite;
 }
+/* Wenn im Knopf nur "weiter" steht, braucht es keine Trennlinie */
+.weiter-pfeil.nur-weiter {
+  margin-left: 0;
+  padding-left: 0;
+  border-left: none;
+  font-size: 1.05em;
+}
 
 /* ---------- Tasche (was du in der Hand haeltst) ---------- */
 .tasche {

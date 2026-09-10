@@ -396,3 +396,124 @@ export function stoppeMusik() {
     musikRegler.gain.linearRampToValueAtTime(0, jetzt + 1.5);
   }
 }
+
+/* ==================================================================
+   JEDES DING HAT SEINEN EIGENEN KLANG
+
+   Damit man auf dem Planeten Melodien spielen kann:
+     - die TONHOEHE kommt davon, wo das Ding steht
+       (oben hell, unten tief)
+     - die KLANGFARBE kommt davon, was es ist
+       (eine Wolke klingt luftig, ein Baum warm, eine Blume blubbert)
+   ================================================================== */
+
+/** Blubbern - fuer die Blubber-Blume, was sonst. */
+function blubber(hoehe, laut = 0.16) {
+  const h = starte();
+  if (!h || !tonAn) return;
+  const jetzt = h.currentTime;
+  const o = h.createOscillator();
+  const g = h.createGain();
+  const filter = h.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.setValueAtTime(hoehe * 2, jetzt);
+  filter.frequency.exponentialRampToValueAtTime(hoehe * 6, jetzt + 0.18);
+  o.type = 'sine';
+  o.frequency.setValueAtTime(hoehe * 0.55, jetzt);
+  o.frequency.exponentialRampToValueAtTime(hoehe * 1.5, jetzt + 0.16);
+  g.gain.setValueAtTime(0, jetzt);
+  g.gain.linearRampToValueAtTime(laut, jetzt + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001, jetzt + 0.4);
+  o.connect(filter).connect(g).connect(lautstaerke);
+  inDenHall(g, 0.3);
+  o.start(jetzt);
+  o.stop(jetzt + 0.5);
+}
+
+/** Ein kurzes Klopfen - fuer Steine. */
+function klopfen(hoehe) {
+  ton({ hoehe: hoehe * 0.5, dauer: 0.12, form: 'triangle', laut: 0.16, gleiten: -hoehe * 0.2 });
+  rauschen({ dauer: 0.09, laut: 0.05, filter: hoehe * 3 });
+}
+
+/** Ein Zwitschern - fuer Tiere. */
+function zwitschern(hoehe) {
+  ton({ hoehe: hoehe * 1.6, dauer: 0.1, form: 'sine', laut: 0.12, gleiten: hoehe * 1.2 });
+  ton({ hoehe: hoehe * 2.2, dauer: 0.12, form: 'sine', laut: 0.09, verzug: 0.09, gleiten: -hoehe * 0.6 });
+}
+
+/**
+ * Der Ton fuer ein angetipptes Ding.
+ *   typ           - was es ist ('wolke', 'apfelbaum', ...)
+ *   hoehenAnteil  - 0 = unten am Planeten, 1 = oben
+ */
+export function klangDing(typ, hoehenAnteil = 0.5) {
+  const stufe = Math.max(0, Math.min(PENTA.length - 1,
+    Math.round(hoehenAnteil * (PENTA.length - 1))));
+  const hoehe = PENTA[stufe];
+
+  switch (typ) {
+    case 'wolke':
+      // luftig und hoch, mit viel Hall - wie ein Windspiel
+      glocke({ hoehe: hoehe * 2, dauer: 2.6, laut: 0.085 });
+      glocke({ hoehe: hoehe * 3, dauer: 2, laut: 0.045, verzug: 0.1 });
+      rauschen({ dauer: 0.5, laut: 0.035, filter: 2600 });
+      break;
+
+    case 'apfelbaum':
+    case 'apfelbaum-trocken':
+    case 'baum':
+      // warm und tief, wie wenn man an einen Baumstamm klopft
+      glocke({ hoehe: hoehe * 0.5, dauer: 2.4, laut: 0.13 });
+      ton({ hoehe: hoehe * 0.25, dauer: 0.3, form: 'triangle', laut: 0.1, gleiten: -20 });
+      break;
+
+    case 'blubber-blume':
+    case 'blubber-trocken':
+      blubber(hoehe);
+      break;
+
+    case 'blume':
+      glocke({ hoehe: hoehe * 2, dauer: 1.1, laut: 0.1 });
+      break;
+
+    case 'haeschen':
+      zwitschern(hoehe);
+      break;
+
+    case 'schmetterling':
+      glocke({ hoehe: hoehe * 4, dauer: 0.8, laut: 0.05 });
+      glocke({ hoehe: hoehe * 5, dauer: 0.6, laut: 0.035, verzug: 0.07 });
+      break;
+
+    case 'stein':
+      klopfen(hoehe);
+      break;
+
+    case 'pilz':
+      // ein federndes "Boing"
+      ton({ hoehe: hoehe * 0.8, dauer: 0.35, form: 'sine', laut: 0.14, gleiten: hoehe * 0.9 });
+      break;
+
+    case 'busch':
+      rauschen({ dauer: 0.3, laut: 0.09, filter: hoehe * 2 });
+      glocke({ hoehe: hoehe, dauer: 0.8, laut: 0.06 });
+      break;
+
+    case 'gras-gesund':
+    case 'gras-trocken':
+      rauschen({ dauer: 0.22, laut: 0.07, filter: hoehe * 3.5 });
+      glocke({ hoehe: hoehe * 1.5, dauer: 0.7, laut: 0.07 });
+      break;
+
+    case 'giesskanne':
+    case 'samentuete':
+      ton({ hoehe: hoehe, dauer: 0.14, form: 'triangle', laut: 0.14, gleiten: hoehe * 0.5 });
+      break;
+
+    default:
+      // der Boden und alles andere: eine weiche Glocke
+      glocke({ hoehe: hoehe * 0.5, dauer: 1.6, laut: 0.1 });
+      ton({ hoehe: hoehe * 0.25, dauer: 0.22, form: 'sine', laut: 0.12, gleiten: -30 });
+  }
+}

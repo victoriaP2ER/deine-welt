@@ -96,6 +96,33 @@ function enthuelleNeuesStueck(s, nummer, mitFunken = true) {
   return objekt;
 }
 
+/* ------------------------------------------------------------------
+   WOLKEN
+
+   Fuenf Wolken verteilen sich rund um den Planeten, regnen ueberall
+   gleichzeitig - und ziehen danach wieder weiter.
+   ------------------------------------------------------------------ */
+const WOLKEN_ORTE = [
+  [0.25, 0.55, 0.8], [-0.7, 0.3, 0.65], [0.75, -0.2, -0.62],
+  [-0.35, -0.65, 0.68], [0.1, 0.85, -0.5],
+];
+
+function stelleWolkenAuf(s) {
+  const wolken = [];
+  WOLKEN_ORTE.forEach((ort, i) => {
+    const wolke = s.bauer.baueWolke({ groesse: 0.85 + i * 0.06, startzahl: i + 2 });
+    const richtung = v(ort);
+    // negatives "einsinken" heisst: sie schwebt ueber der Oberflaeche
+    s.planet.stelleAuf(wolke, richtung, { einsinken: -0.85, drehung: i * 1.1 });
+    // der Fallweg der Tropfen ist genau der Abstand bis zum Boden
+    wolke.setzeFallweg(s.planet.radius * 0.85);
+    wolke.scale.setScalar(0.05);
+    s.lassWachsen(wolke, 1, 1.4);
+    wolken.push(wolke);
+  });
+  return wolken;
+}
+
 /** Schmetterlinge einfliegen lassen */
 function lassFalterFliegen(s, anzahl = 3) {
   const farben = ['#ff9d3c', '#f492b4', '#8fd0f0', '#ffd75e'];
@@ -359,13 +386,10 @@ const kapitel = [
   {
     id: 'die-wolke',
     sofort: (s) => {
-      const wolke = s.bauer.baueWolke({ groesse: 1.1, startzahl: 2 });
-      wolke.position.set(1.15, 0.95, 0.7);
-      s.szene.add(wolke);
-      s.wolke = wolke;
-      // alles ist gruen geworden
+      // alles ist gruen geworden, die Schmetterlinge sind da
       ORTE.grasTrocken.forEach((ort) => s.planet.maleGruen(v(ort), 0.5, 1));
       ORTE.deko.forEach((ort) => s.planet.maleGruen(v(ort), 0.45, 1));
+      WOLKEN_ORTE.forEach((ort) => s.planet.maleGruen(v(ort), 0.55, 1));
       lassFalterFliegen(s, 3);
       s.planet.wachseAuf(0.97);
       s.planet.setzeRadius(0.97);
@@ -377,46 +401,59 @@ const kapitel = [
         'Das riecht nach Regen. Das hat es hier seit Ewigkeiten nicht mehr gegeben.',
       ], 'staunen');
 
-      // Eine Wolke kommt angeschwebt
-      const wolke = s.bauer.baueWolke({ groesse: 1.1, startzahl: 2 });
-      wolke.position.set(4.5, 2.2, 1.2);
-      s.szene.add(wolke);
-      s.wolke = wolke;
+      // Fuenf Wolken schweben heran und verteilen sich rundherum
+      const wolken = stelleWolkenAuf(s);
+      s.klang.klangFunke();
+      await s.warte(1.8);
 
-      const ziel = new THREE.Vector3(1.15, 0.95, 0.7);
-      for (let i = 0; i < 70; i++) {
-        wolke.position.lerp(ziel, 0.06);
-        await new Promise((f) => requestAnimationFrame(f));
-      }
+      await s.mondSagt([
+        'Da kommen sie! Von allen Seiten!',
+      ], 'gluecklich');
 
-      await s.mondSagt(['Da kommt sie! Halt dich fest.'], 'gluecklich');
+      // PAUSE: die Wolken erst mal anschauen und herumfliegen
+      await s.warteAufUmsehen('schau dir die Wolken an');
 
-      wolke.regne(true);
+      // Es regnet ueberall gleichzeitig
+      for (const wolke of wolken) wolke.regne(true);
       s.klang.klangGiessen();
-      // der Regen macht den ganzen Planeten gruen
-      for (let i = 0; i < ORTE.grasTrocken.length; i++) {
-        s.planet.maleGruen(v(ORTE.grasTrocken[i]), 0.5, 0.6);
-        s.klang.klangFunke();
-        await s.warte(0.35);
-      }
-      ORTE.deko.forEach((ort) => s.planet.maleGruen(v(ort), 0.42, 0.8));
 
-      // restliches trockenes Gras wird gesund
-      const trockene = s.planet.aufgestellt.filter((o) => o.userData.typ === 'gras-trocken');
-      for (const g of trockene) { s.tauscheGrasAus(g); await s.warte(0.2); }
-      await s.warte(1.5);
-      wolke.regne(false);
+      // Der Regen macht den ganzen Planeten gruen - Stelle fuer Stelle
+      const alleStellen = [...WOLKEN_ORTE, ...ORTE.grasTrocken, ...ORTE.deko];
+      for (let i = 0; i < alleStellen.length; i++) {
+        s.planet.maleGruen(v(alleStellen[i]), 0.5, 0.55);
+        if (i % 3 === 0) s.klang.klangFunke();
+        await s.warte(0.22);
+      }
+
+      // vertrocknete Sachen bluehen im Regen auf
+      const welkeBaeume = s.planet.aufgestellt.filter((o) => o.userData.typ === 'apfelbaum-trocken');
+      for (const b of welkeBaeume) { s.verwandleBaum(b); await s.warte(0.4); }
+      const welkeBlumen = s.planet.aufgestellt.filter((o) => o.userData.typ === 'blubber-trocken');
+      for (const b of welkeBlumen) { s.verwandleBlume(b); await s.warte(0.3); }
+      const trockenes = s.planet.aufgestellt.filter((o) => o.userData.typ === 'gras-trocken');
+      for (const g of trockenes) { s.tauscheGrasAus(g); await s.warte(0.18); }
+
+      await s.warte(2.5);
+
+      // Die Wolken haben ihre Arbeit getan und ziehen weiter
+      for (const wolke of wolken) wolke.regne(false);
+      await s.warte(1.2);
+      for (const wolke of wolken) {
+        // sie schweben nach draussen weg und werden kleiner
+        s.lassWachsen(wolke, 0.001, 2.2);
+      }
+      await s.warte(2.4);
+      for (const wolke of wolken) s.planet.nimmWeg(wolke);
 
       s.lasseWeltWachsen(0.1);
       enthuelleNeuesStueck(s, 3);
-      await s.warte(0.8);
+      await s.warte(1);
 
       lassFalterFliegen(s, 3);
       s.klang.klangTier();
       await s.mondSagt(['Oh! Schau mal ...'], 'staunen');
 
-      // PAUSE ZUM STAUNEN: jetzt darf man sich in Ruhe umsehen.
-      // Es geht erst weiter, wenn man Lunix antippt.
+      // PAUSE ZUM STAUNEN
       await s.warteAufUmsehen('schau dich um');
 
       await s.mondSagt([

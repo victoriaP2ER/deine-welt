@@ -178,59 +178,152 @@ export function baueHaeschen({ groesse = 1, startzahl = 1 } = {}) {
 }
 
 /* ==================================================================
-   WOLKE - kann regnen lassen
+   REGENWOLKE
+
+   Aus Papierklecksen in drei Lagen geschichtet: hinten dunkler und
+   groesser, vorne heller - so wirkt sie bauschig.
+
+   Wichtig ist die Richtung: die Wolke schwebt UEBER einer Stelle des
+   Planeten, und ihre Tropfen fallen nach unten in Richtung
+   Planetenmitte. (Im Weltall gibt es kein "unten" - unten ist
+   immer da, wo der Planet ist.)
    ================================================================== */
 export function baueWolke({ groesse = 1, startzahl = 1 } = {}) {
   const w = machWuerfel(startzahl * 999983 + 3);
   const wolke = new THREE.Group();
+
+  /* ---------- der bauschige Koerper ---------- */
   const ballen = new THREE.Group();
-  const orte = [[-0.16, 0, 0], [0.16, 0.01, 0], [0, 0.07, 0.02], [-0.07, -0.03, -0.05], [0.08, -0.02, 0.06]];
-  orte.forEach(([x, y, zz], i) => {
+  const lagen = [
+    // [x, y, z, groesse, helligkeit]
+    [-0.22, -0.02, -0.07, 0.30, -0.14],
+    [ 0.24, -0.03, -0.06, 0.27, -0.12],
+    [ 0.02,  0.06, -0.09, 0.34, -0.10],
+    [-0.12, -0.05,  0.02, 0.28, -0.02],
+    [ 0.14, -0.04,  0.03, 0.26, -0.01],
+    [ 0.00,  0.08,  0.05, 0.30,  0.05],
+    [-0.05, -0.01,  0.12, 0.24,  0.08],
+  ];
+  lagen.forEach(([x, y, z, gr, hell], i) => {
     const k = macheSchnipsel({
-      bild: 'klecks', farbe: tone('#fdfcf8', -0.02 * i), hoehe: (0.17 + w(0, 0.07)) * groesse, woelbung: 0.06 * groesse,
+      bild: 'klecks',
+      farbe: tone('#fbfaf6', hell),
+      hoehe: gr * groesse * w(0.92, 1.08),
+      woelbung: 0.1 * groesse,
     });
-    k.position.set(x * groesse, y * groesse, zz * groesse);
-    k.rotation.y = w(-0.5, 0.5);
+    k.position.set(x * groesse, y * groesse, z * groesse);
+    k.rotation.set(w(-0.2, 0.2), w(-0.5, 0.5), w(-0.2, 0.2));
     ballen.add(k);
   });
+  // die Unterseite ist leicht grau - dann sieht man, dass es
+  // eine Regenwolke ist und keine Schaefchenwolke
+  for (let i = 0; i < 3; i++) {
+    const unten = macheSchnipsel({
+      bild: 'klecks',
+      farbe: '#b9c4d4',
+      hoehe: 0.2 * groesse,
+      woelbung: 0.06 * groesse,
+    });
+    unten.position.set((i - 1) * 0.16 * groesse, -0.1 * groesse, 0.02 * groesse);
+    unten.rotation.x = 0.5;
+    ballen.add(unten);
+  }
   wolke.add(ballen);
 
-  /* --- Gesicht (klein und freundlich) --- */
+  /* ---------- ein kleines Gesicht ---------- */
+  const gesicht = new THREE.Group();
+  gesicht.position.set(0, 0.01 * groesse, 0.16 * groesse);
   for (const seite of [-1, 1]) {
-    const auge = macheSchnipsel({ bild: 'pupille', farbe: '#7b8fa8', hoehe: 0.03 * groesse, woelbung: 0.01 });
-    auge.position.set(seite * 0.05 * groesse, 0.01 * groesse, 0.1 * groesse);
-    wolke.add(auge);
+    const auge = macheSchnipsel({ bild: 'pupille', farbe: '#71829a', hoehe: 0.045 * groesse, woelbung: 0.01 });
+    auge.position.set(seite * 0.07 * groesse, 0.02 * groesse, 0);
+    gesicht.add(auge);
   }
-  const mund = macheSchnipsel({ bild: 'mund-laecheln', farbe: '#7b8fa8', hoehe: 0.035 * groesse, woelbung: 0.01 });
-  mund.position.set(0, -0.04 * groesse, 0.1 * groesse);
-  wolke.add(mund);
+  const mund = macheSchnipsel({ bild: 'mund-laecheln', farbe: '#71829a', hoehe: 0.05 * groesse, woelbung: 0.01 });
+  mund.position.set(0, -0.05 * groesse, 0);
+  gesicht.add(mund);
+  wolke.add(gesicht);
 
-  /* --- Regentropfen --- */
+  /* ---------- die Tropfen ----------
+     Sie fallen in Richtung des lokalen "unten" - und weil die Wolke
+     mit dem Bauch zum Planeten aufgestellt wird, zeigt das genau
+     zur Planetenoberflaeche.                                        */
+  const TROPFEN_ANZAHL = 14;
+  const FALLWEG = 1.15 * groesse;      // wird beim Aufstellen angepasst
   const tropfen = [];
-  for (let i = 0; i < 8; i++) {
-    const t = macheSchnipsel({ bild: 'tropfen', farbe: '#7ec8f0', hoehe: 0.05 * groesse, woelbung: 0.01 });
+  for (let i = 0; i < TROPFEN_ANZAHL; i++) {
+    const t = macheSchnipsel({
+      bild: 'tropfen',
+      farbe: '#7cc9f0',
+      hoehe: 0.075 * groesse,
+      woelbung: 0.015,
+    });
     t.userData.beweglich = true;
-    t.userData.start = w(0, 1);
-    t.position.set(w(-0.16, 0.16) * groesse, -0.1, w(-0.06, 0.06) * groesse);
+    t.userData.start = i / TROPFEN_ANZAHL + w(-0.03, 0.03);
+    t.userData.seite = new THREE.Vector3(w(-0.22, 0.22), 0, w(-0.22, 0.22)).multiplyScalar(groesse);
     t.visible = false;
     wolke.add(t);
     tropfen.push(t);
   }
 
-  let regnet = false;
-  wolke.regne = (an) => { regnet = an; tropfen.forEach((t) => { t.visible = an; }); };
+  /* ---------- Spritzer, wenn ein Tropfen ankommt ---------- */
+  const spritzer = [];
+  for (let i = 0; i < 6; i++) {
+    const sp = macheSchnipsel({
+      bild: 'funke', farbe: '#bfe8fb', hoehe: 0.07 * groesse,
+      woelbung: 0, leuchten: 0.8, durchsichtig: true,
+    });
+    sp.userData.beweglich = true;
+    sp.visible = false;
+    wolke.add(sp);
+    spritzer.push(sp);
+  }
+
+  const z = {
+    regnet: false,
+    fallweg: FALLWEG,
+    kraft: 0,          // 0 = kein Regen, 1 = Platzregen
+  };
+
+  wolke.regne = (an) => { z.regnet = an; };
+  wolke.setzeFallweg = (weg) => { z.fallweg = weg; };
 
   wolke.userData.typ = 'wolke';
-  wolke.userData.belebe = (zeit) => {
-    ballen.rotation.z = Math.sin(zeit * 0.6) * 0.04;
-    ballen.position.y = Math.sin(zeit * 0.9) * 0.012;
-    if (regnet) {
-      tropfen.forEach((t) => {
-        const f = ((zeit * 0.55 + t.userData.start) % 1);
-        t.position.y = -0.12 - f * 0.85;
-        t.scale.setScalar(1 - f * 0.35);
-      });
-    }
+  wolke.userData.hoehe = 0.4 * groesse;
+  wolke.userData.belebe = (zeit, schritt) => {
+    // sanftes Wabern
+    ballen.rotation.z = Math.sin(zeit * 0.5 + startzahl) * 0.05;
+    ballen.position.y = Math.sin(zeit * 0.8 + startzahl) * 0.015 * groesse;
+
+    // Regen ein- und ausfaden
+    const ziel = z.regnet ? 1 : 0;
+    z.kraft += (ziel - z.kraft) * Math.min(1, schritt * 1.6);
+
+    tropfen.forEach((t, i) => {
+      if (z.kraft < 0.02) { t.visible = false; return; }
+      // jeder Tropfen faellt in seinem eigenen Rhythmus
+      const f = ((zeit * 0.85 + t.userData.start) % 1);
+      if (f > z.kraft * 1.1) { t.visible = false; return; }
+      t.visible = true;
+      t.position.copy(t.userData.seite);
+      t.position.y = -0.12 * groesse - f * z.fallweg;
+      // beim Fallen wird er schmaler, wie ein echter Tropfen
+      t.scale.set(0.85 + f * 0.2, 1 + f * 0.5, 1);
+      t.rotation.y = zeit * 2 + i;
+    });
+
+    // Spritzer am Boden
+    spritzer.forEach((sp, i) => {
+      if (z.kraft < 0.3) { sp.visible = false; return; }
+      const f = ((zeit * 1.3 + i / spritzer.length) % 1);
+      if (f > 0.35) { sp.visible = false; return; }
+      sp.visible = true;
+      const seite = tropfen[i % tropfen.length].userData.seite;
+      sp.position.set(seite.x, -0.12 * groesse - z.fallweg, seite.z);
+      const s = f * 3;
+      sp.scale.setScalar(0.4 + s);
+      sp.material.opacity = Math.max(0, 0.7 - s * 0.6);
+      sp.rotation.x = -Math.PI / 2;
+    });
   };
   return wolke;
 }

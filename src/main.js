@@ -866,20 +866,22 @@ async function los() {
            Wenn Lunix redet, schwenkt sie zu ihm hoch - und danach
            wieder runter auf die Welt.                              --- */
     if (blick.schautZuLunix) {
-      blick.zielZiel.copy(mond.position).multiplyScalar(0.5);
-      blick.zielAbstand = 2.6 + planet.radius * 2.5 + mond.position.length() * 0.42;
+      // Der Blick geht auf einen Punkt zwischen Planet und Lunix -
+      // aber naeher am Planeten, damit die Welt die Hauptrolle behaelt.
+      blick.zielZiel.copy(mond.position).multiplyScalar(0.3);
+      blick.zielAbstand = 3.3 + planet.radius * 2.6 + mond.position.length() * 0.5;
 
-      // sanft in Lunix' Richtung schwenken, damit er nicht hinter
-      // dem Planeten verschwindet
+      // Die Kamera stellt sich SCHRAEG neben Lunix - dann stehen
+      // Planet und Lunix nebeneinander im Bild, statt hintereinander.
       const mondSeite = Math.atan2(mond.position.x, mond.position.z);
-      let unterschied = mondSeite - blick.seite;
+      let unterschied = (mondSeite - 0.8) - blick.seite;
       while (unterschied > Math.PI) unterschied -= Math.PI * 2;
       while (unterschied < -Math.PI) unterschied += Math.PI * 2;
       blick.seite += unterschied * (1 - Math.pow(0.35, schritt));
 
       const laenge = mond.position.length() || 1;
       const mondHoch = Math.asin(THREE.MathUtils.clamp(mond.position.y / laenge, -1, 1));
-      blick.hoch += (mondHoch * 0.45 + 0.1 - blick.hoch) * (1 - Math.pow(0.4, schritt));
+      blick.hoch += (mondHoch * 0.35 + 0.12 - blick.hoch) * (1 - Math.pow(0.4, schritt));
     } else {
       blick.zielZiel.set(0, 0, 0);
       blick.zielAbstand = zustand.schlaeft ? 4.6 : 2.15 + planet.radius * 2.6;

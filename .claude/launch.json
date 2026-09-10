@@ -4,7 +4,9 @@
     {
       "name": "deine-welt",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["server.js"],
+      "runtimeArgs": [
+        "werkzeuge/server.js"
+      ],
       "port": 5173
     }
   ]

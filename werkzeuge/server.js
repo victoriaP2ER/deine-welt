@@ -1,11 +1,11 @@
 // Ein winziger Server, damit du "Deine Welt" auf deinem Computer anschauen kannst.
-// Starten mit:  npm start     (oder:  node server.js)
+// Starten mit:  npm start     (oder:  node werkzeuge/server.js)
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
 const PORT = process.env.PORT || 5173;
-const ROOT = __dirname;
+const ROOT = path.join(__dirname, '..');   // der Spielordner liegt eine Ebene hoeher
 const TYPEN = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',

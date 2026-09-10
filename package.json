@@ -4,7 +4,7 @@
   "description": "Ein kleines Spiel: pflege einen traurigen Planeten, bis er wieder wächst.",
   "private": true,
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
+    "start": "node werkzeuge/server.js",
+    "dev": "node werkzeuge/server.js"
   }
 }

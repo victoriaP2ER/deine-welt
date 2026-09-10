@@ -271,8 +271,8 @@ async function los() {
         const passt = treffer && wartendeAufgabe.typen.includes(typ);
         if (passt) {
           wartendeAufgabe.treffer(treffer);
-        } else if (treffer) {
-          // etwas anderes angetippt - kleiner Hinweis
+        } else {
+          // daneben getippt: ein kleiner Funke und der Hinweis bleibt
           ui.funkeAmBildschirm(x, y, '·');
         }
       }
@@ -602,7 +602,7 @@ async function los() {
     } else {
       // Buehne: gut sichtbar vor der Kamera, etwas zur Seite
       const ziel = kamera.localToWorld(new THREE.Vector3(
-        1.05 * mondBahn.buehneSeite, 0.62, -3.1
+        1.0 * mondBahn.buehneSeite, 0.18, -3.1
       ));
       mond.position.lerp(ziel, 1 - Math.pow(0.004, schritt));
       // Die Sprechblase folgt dem Mond

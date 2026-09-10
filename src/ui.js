@@ -57,7 +57,7 @@ export function sagText(satz, { beiFertig = null, beiBuchstabe = null } = {}) {
   beimFertig = beiFertig;
   istFertig = false;
   const warVersteckt = teile.blase.hidden;
-  letzteBlaseX = -999;                     // Breite neu messen lassen
+  letzteBlaseX = -999;                     // Groesse neu messen lassen
   teile.blase.hidden = false;
   teile.blaseText.textContent = '';
   teile.blaseWeiter.classList.remove('da');
@@ -78,6 +78,7 @@ export function sagText(satz, { beiFertig = null, beiBuchstabe = null } = {}) {
     if (beiBuchstabe) beiBuchstabe(i / satz.length);
     if (i >= satz.length) {
       clearInterval(schreibUhr);
+      letzteBlaseX = -999;          // Hoehe neu messen: der Satz ist fertig
       istFertig = true;
       teile.blaseWeiter.classList.add('da');
       if (beimFertig) beimFertig();
@@ -110,17 +111,26 @@ export function versteckBlase() {
 let letzteBlaseX = -999;
 let letzteBlaseY = -999;
 let gemerkteBreite = 240;
+let gemerkteHoehe = 100;
 
 export function setzeBlaseAn(x, y) {
   const b = teile.blase;
   if (b.hidden) return;
-  // Die Breite nur ab und zu neu messen - das spart Arbeit,
+  // Breite und Hoehe nur ab und zu neu messen - das spart Arbeit,
   // weil diese Funktion bei jedem Bild aufgerufen wird.
-  if (letzteBlaseX === -999) gemerkteBreite = b.offsetWidth || 240;
+  if (letzteBlaseX === -999) {
+    gemerkteBreite = b.offsetWidth || 240;
+    gemerkteHoehe = b.offsetHeight || 100;
+  }
   const rand = 14;
   const links = Math.round(Math.min(Math.max(x, gemerkteBreite / 2 + rand),
                                     window.innerWidth - gemerkteBreite / 2 - rand));
-  const oben = Math.round(Math.min(Math.max(y, 120), window.innerHeight - 90));
+  // Die Blase waechst von ihrem Punkt aus nach OBEN. Darum muss ihre
+  // ganze Hoehe unter den Bildschirmrand passen, sonst ist der Anfang
+  // des Satzes abgeschnitten.
+  const oben = Math.round(Math.min(
+    Math.max(y, gemerkteHoehe + 26 + rand),
+    window.innerHeight - 100));
   if (links === letzteBlaseX && oben === letzteBlaseY) return;
   letzteBlaseX = links;
   letzteBlaseY = oben;

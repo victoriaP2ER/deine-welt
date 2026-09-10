@@ -130,7 +130,7 @@ const kapitel = [
     spiel: async (s) => {
       s.mond.setzeGefuehl('traurig');
       s.ui.setzeTitelHinweis('Tippe auf das Licht');
-      await s.warteAufTipp('kern');
+      await s.warteAufTipp(['kern', 'mond']);
 
       s.weckeWelt();
       s.mond.setzeGefuehl('staunen');
@@ -140,8 +140,12 @@ const kapitel = [
       await s.mondSagt([
         'Oh! Du hast das Licht angetippt.',
         'Du kannst mich sehen? Wirklich?',
-        'Hallo. Ich bin der Mond.',
+        'Hallo. Ich bin Lunix.',
       ], 'staunen');
+      await s.mondSagt([
+        'Eigentlich sollte ich Luna heissen. Wie alle Monde.',
+        'Aber auf meinem Planeten war ja nix mehr. Also: Lunix.',
+      ], 'traurig');
     },
   },
 

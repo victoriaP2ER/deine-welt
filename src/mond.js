@@ -96,6 +96,14 @@ export function baueMond() {
     }
     ringe.add(gebacken);
     backeZusammen(gebacken);
+
+    /* Wichtig: die Ringe sind viel breiter als der Mond selbst.
+       Wuerden sie Fingertipps abfangen, koennte man nichts mehr
+       antippen, was dahinter liegt (zum Beispiel den Planeten).
+       Darum sind sie fuer Beruehrungen unsichtbar.                  */
+    ringe.traverse((teil) => {
+      if (teil.isMesh) teil.raycast = () => {};
+    });
   }
 
   /* ---------- Gesicht ---------- */

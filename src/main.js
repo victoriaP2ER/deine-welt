@@ -401,6 +401,8 @@ async function los() {
   const bedienung = macheBedienung({
     blick,
     szene,
+    // Der Magnet braucht die Liste der antippbaren Dinge
+    antippbareDinge: () => planet.aufgestellt.filter((o) => o.userData.antippbar),
     beiTipp: ({ treffer, x, y }) => {
       klang.weckeTon();
       // Musik anwerfen (passiert nur beim ersten Mal etwas)
@@ -462,13 +464,15 @@ async function los() {
     const werkzeug = ui.werkzeugInDerHand();
     const typ = treffer.ding.userData.typ;
 
-    if (werkzeug === 'giesskanne'
-        && (typ === 'boden' || typ === 'gras-trocken' || typ === 'setzling'
-            || typ === 'blubber-trocken' || typ === 'apfelbaum-trocken')) {
+    // Mit der Giesskanne in der Hand kann man ueberall giessen -
+    // auf den Boden, auf Gras, auf Blumen, auf Baeume.
+    if (werkzeug === 'giesskanne') {
       giesseAn(treffer);
       return;
     }
-    if (werkzeug === 'samentuete' && typ === 'boden') {
+    // Mit der Samentuete pflanzt man - auch wenn der Magnet gerade
+    // ein Ding in der Naehe vorgeschlagen hat.
+    if (werkzeug === 'samentuete' && (typ === 'boden' || treffer.ueberMagnet)) {
       pflanzeBlumeAn(treffer);
       return;
     }
@@ -513,6 +517,8 @@ async function los() {
 
   /* --- Giessen --- */
   function giesseAn(treffer) {
+    // Der Punkt kann vom Boden kommen oder von einem Ding darauf -
+    // beides ergibt eine Richtung auf der Planetenkugel.
     const lokal = planet.gruppe.worldToLocal(treffer.punkt.clone()).normalize();
     planet.maleGruen(lokal, 0.34, 0.85);
     klang.klangGiessen();

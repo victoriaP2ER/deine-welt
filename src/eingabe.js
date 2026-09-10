@@ -13,9 +13,10 @@ import { kamera } from './szene.js';
 
 const leinwand = document.getElementById('buehne');
 
-export function macheBedienung({ szene, blick, beiTipp, beiStreicheln }) {
+export function macheBedienung({ szene, blick, beiTipp, beiStreicheln, antippbareDinge }) {
   const zeiger = new THREE.Vector2();
   const strahl = new THREE.Raycaster();
+  const merker = new THREE.Vector3();
 
   const z = {
     zieht: false,
@@ -32,7 +33,7 @@ export function macheBedienung({ szene, blick, beiTipp, beiStreicheln }) {
   };
 
   /* ---------- Was ist unter dem Finger? ---------- */
-  function wasIstDa(x, y) {
+  function strahlTreffer(x, y) {
     zeiger.x = (x / window.innerWidth) * 2 - 1;
     zeiger.y = -(y / window.innerHeight) * 2 + 1;
     strahl.setFromCamera(zeiger, kamera);
@@ -50,6 +51,50 @@ export function macheBedienung({ szene, blick, beiTipp, beiStreicheln }) {
       }
     }
     return null;
+  }
+
+  /* ---------- MAGNET FUER KLEINE DINGE ------------------------------
+     Ein Haeschen oder eine Blume ist auf dem Bildschirm nur ein
+     paar Pixel gross - mit dem Finger trifft man das kaum.
+
+     Darum: wenn der Fingertipp nur den Boden erwischt hat, schauen
+     wir, ob in der Naehe (auf dem Bildschirm!) etwas Antippbares
+     steht. Wenn ja, ist das gemeint.
+     ------------------------------------------------------------------ */
+  function findeNahesDing(x, y, umkreis) {
+    if (!antippbareDinge) return null;
+    let bestes = null;
+    let besteEntfernung = umkreis;
+    for (const ding of antippbareDinge()) {
+      if (!ding.visible || !ding.parent) continue;
+      ding.getWorldPosition(merker);
+      // etwas nach oben, zur Mitte des Dings
+      const hoehe = ding.userData.hoehe || 0.2;
+      merker.addScaledVector(ding.userData.richtung || merker.clone().normalize(), hoehe * 0.4);
+      const projiziert = merker.clone().project(kamera);
+      if (projiziert.z > 1) continue;                  // hinter der Kamera
+      const dx = (projiziert.x * 0.5 + 0.5) * window.innerWidth - x;
+      const dy = (-projiziert.y * 0.5 + 0.5) * window.innerHeight - y;
+      const entfernung = Math.sqrt(dx * dx + dy * dy);
+      if (entfernung < besteEntfernung) {
+        besteEntfernung = entfernung;
+        bestes = ding;
+      }
+    }
+    if (!bestes) return null;
+    bestes.getWorldPosition(merker);
+    return { ding: bestes, punkt: merker.clone(), netz: bestes, ueberMagnet: true };
+  }
+
+  function wasIstDa(x, y) {
+    const genau = strahlTreffer(x, y);
+    // Ein kleines Ding in der Naehe zaehlt mehr als der Boden dahinter
+    if (!genau || genau.ding.userData.typ === 'boden') {
+      const umkreis = Math.max(38, Math.min(window.innerWidth, window.innerHeight) * 0.075);
+      const nah = findeNahesDing(x, y, umkreis);
+      if (nah) return nah;
+    }
+    return genau;
   }
 
   /* ---------- Finger runter ---------- */

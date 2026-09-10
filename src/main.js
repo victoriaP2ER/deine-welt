@@ -75,6 +75,7 @@ async function los() {
     winkel: 0,
     neigung: 0.5,
     geschwindigkeit: 0.15,
+    erzaehlNaehe: 0,     // 0 = normale Bahn, 1 = kommt zum Erzaehlen naeher
   };
 
   /* ---------- DER BLICK: wo ist die Kamera, wohin schaut sie? ----------
@@ -89,6 +90,7 @@ async function los() {
     zielAbstand: 4.6,
     schwungSeite: 0,
     schwungHoch: 0,
+    griffRadius: 0.7,   // wie gross der Planet gerade ist (fuer 1:1-Gefuehl)
     ziel: new THREE.Vector3(0, 0, 0),        // wohin die Kamera schaut
     zielZiel: new THREE.Vector3(0, 0, 0),    // wohin sie schauen soll
     schautZuLunix: false,
@@ -761,6 +763,7 @@ async function los() {
     const zeit = zustand.zeit += schritt;
 
     belebeSterne(zeit);
+    blick.griffRadius = Math.max(0.35, planet.radius);
     bedienung.belebe(schritt);
     planet.belebe(zeit, schritt);
 
@@ -773,13 +776,21 @@ async function los() {
     kernKugel.scale.setScalar(THREE.MathUtils.lerp(kernKugel.scale.x, puls, 0.1));
     glanz.material.opacity = zustand.schlaeft ? 0.95 : Math.max(0, 0.5 - planet.radius * 0.5);
 
-    /* --- Lunix zieht seine Bahn um den Planeten --- */
+    /* --- Lunix zieht seine Bahn um den Planeten ---
+       Beim Erzaehlen kommt er ein Stueck naeher und hoeher, damit er
+       nicht hinter dem Planeten verschwindet.                      */
     mondBahn.winkel += schritt * mondBahn.geschwindigkeit;
     {
-      const r = Math.max(2.6, planet.radius * 2.2 + 2.35);
+      mondBahn.erzaehlNaehe = THREE.MathUtils.lerp(
+        mondBahn.erzaehlNaehe, blick.schautZuLunix ? 1 : 0,
+        1 - Math.pow(0.05, schritt));
+
+      const r = Math.max(2.9, planet.radius * 2.5 + 2.5)
+                * (1 + mondBahn.erzaehlNaehe * 0.22);
       mond.position.set(
         Math.cos(mondBahn.winkel) * r,
-        Math.sin(mondBahn.winkel * 0.85) * r * mondBahn.neigung,
+        Math.sin(mondBahn.winkel * 0.85) * r * mondBahn.neigung
+          + mondBahn.erzaehlNaehe * (planet.radius + 0.7),
         Math.sin(mondBahn.winkel) * r
       );
     }

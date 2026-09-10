@@ -97,13 +97,27 @@ export function macheBedienung({ szene, blick, beiTipp, beiStreicheln }) {
     blick.schwungHoch = dy;
   });
 
-  /* ---------- die Kamera um den Planeten bewegen ---------- */
+  /* ---------- die Kamera um den Planeten bewegen ----------
+
+     Damit es sich anfuehlt, als wuerdest du den Planeten wirklich
+     anfassen und schieben, muss sich die Stelle unter dem Finger
+     genau so weit mitbewegen wie der Finger selbst.
+
+     Dafuer rechnen wir aus, wie viele Pixel auf dem Bildschirm einem
+     Winkel entsprechen. Das haengt davon ab, wie weit die Kamera weg
+     ist, wie gross der Planet ist und wie hoch das Fenster ist -
+     darum wird es bei jedem Wisch neu berechnet.                     */
   function fliege(dx, dy) {
-    const staerke = 0.0052;
-    blick.seite -= dx * staerke;
+    const halberBlickwinkel = Math.tan((kamera.fov * Math.PI / 180) / 2);
+    const sichtbareHoehe = 2 * blick.abstand * halberBlickwinkel;
+    const griff = Math.max(0.35, blick.griffRadius || 0.7);
+    // so viel Winkel entspricht einem Pixel
+    const proPixel = (sichtbareHoehe / window.innerHeight) / griff;
+
+    blick.seite -= dx * proPixel;
     blick.hoch = THREE.MathUtils.clamp(
-      blick.hoch + dy * staerke,
-      -1.25, 1.25         // nicht ueber die Pole hinaus
+      blick.hoch + dy * proPixel,
+      -1.25, 1.25         // nicht ueber die Pole hinaus purzeln
     );
   }
 

@@ -258,6 +258,13 @@ async function los() {
         freiesSpiel(treffer, x, y);
         return;
       }
+      // Der Mond redet: einmal tippen schreibt den Satz fertig,
+      // nochmal tippen bringt den naechsten. Man darf dafuer ueberall
+      // hintippen, nicht nur genau auf die Blase.
+      if (wartendeAufgabe.art === 'blase') {
+        wartendeAufgabe.weiter();
+        return;
+      }
       if (wartendeAufgabe.art === 'tipp') {
         const typ = treffer && treffer.ding.userData.typ;
         // Am Anfang ist der Kern der "Punkt"
@@ -282,6 +289,11 @@ async function los() {
       kernKugel.scale.setScalar(1 + 0.25 * Math.sin(streichelZaehler));
       if (streichelZaehler >= wartendeAufgabe.ziel) wartendeAufgabe.fertig();
     },
+  });
+
+  // Ein Klick direkt auf die Sprechblase blaettert auch weiter
+  ui.blaseAngetippt(() => {
+    if (wartendeAufgabe && wartendeAufgabe.art === 'blase') wartendeAufgabe.weiter();
   });
 
   // Der leuchtende Punkt soll antippbar und streichelbar sein

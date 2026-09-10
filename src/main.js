@@ -123,13 +123,16 @@ async function los() {
      Fehlt eine Datei, laeuft das Spiel einfach mit den
      Papier-Bastelmodellen weiter.
      ================================================================ */
+  // Die zweite Zahl ist die Hoehe auf dem Planeten.
+  // Vertrocknet ist absichtlich viel kleiner als gesund - dann sieht
+  // man beim Giessen richtig, wie es aufwaechst.
   const DATEIEN = {
-    grasTrocken:  ['meine-sachen/gras-trocken.glb', 0.32],
-    grasGesund:   ['meine-sachen/gras-gesund.glb', 0.5],
-    blumeTrocken: ['meine-sachen/blubber-blume-trocken.glb', 0.4],
-    blumeGesund:  ['meine-sachen/blubber-blume.glb', 0.62],
-    baumTrocken:  ['meine-sachen/apfelbaum-trocken.glb', 0.75],
-    baumGesund:   ['meine-sachen/apfelbaum.glb', 1.05],
+    grasTrocken:  ['meine-sachen/gras-trocken.glb', 0.22],
+    grasGesund:   ['meine-sachen/gras-gesund.glb', 0.55],
+    blumeTrocken: ['meine-sachen/blubber-blume-trocken.glb', 0.26],
+    blumeGesund:  ['meine-sachen/blubber-blume.glb', 0.68],
+    baumTrocken:  ['meine-sachen/apfelbaum-trocken.glb', 0.5],
+    baumGesund:   ['meine-sachen/apfelbaum.glb', 1.2],
   };
 
   const eigene = {};            // name -> Fabrik, die Kopien macht
@@ -582,9 +585,9 @@ async function los() {
     const neu = fabrik();
     neu.userData.typ = 'apfelbaum';
     neu.userData.antippbar = true;
-    neu.scale.setScalar(0.15);
+    neu.scale.setScalar(0.12);
     planet.stelleAuf(neu, richtung, { einsinken: 0.012, drehung });
-    lassWachsen(neu, 1, 1.8);
+    lassWachsen(neu, 1, 2.2);
     klang.klangBaumWaechst();
     funkeBei(neu.getWorldPosition(new THREE.Vector3()), 12);
     return neu;

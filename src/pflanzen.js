@@ -164,7 +164,7 @@ export function baueGras({ groesse = 1, trocken = false, startzahl = 1, faecher 
     const halmeProFaecher = 4;
     for (let i = 0; i < halmeProFaecher; i++) {
       const mitte = i - (halmeProFaecher - 1) / 2;     // faechert nach links und rechts
-      const hoehe = (trocken ? 0.44 : 0.52) * groesse * w(0.85, 1.15)
+      const hoehe = (trocken ? 0.3 : 0.54) * groesse * w(0.85, 1.15)
                     * (1 - Math.abs(mitte) * 0.22);     // aussen kuerzer
       const halm = macheSchnipsel({
         bild: Math.abs(mitte) < 0.6 ? 'halm-breit' : 'halm',

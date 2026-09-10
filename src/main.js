@@ -36,30 +36,6 @@ async function los() {
 
   const wuerfel = machWuerfel(31337);
 
-  /* ---------- Die Blubber-Blumen (selbst gemalt in Open Brush!) ----------
-     Es gibt sie zweimal: vertrocknet und aufgebluecht.
-     Wenn du eine vertrocknete giesst, verwandelt sie sich.
-     Fehlt eine Datei, laeuft das Spiel einfach ohne sie weiter.       */
-  let macheBlubberBlume = null;
-  let macheTrockeneBlume = null;
-
-  try {
-    macheBlubberBlume = await ladeVorlage('meine-sachen/blubber-blume.glb', 0.62);
-    console.log('Blubber-Blume ist da!');
-  } catch (fehler) {
-    console.warn('Blubber-Blume nicht gefunden, macht nichts:', fehler.message);
-  }
-
-  // Die vertrocknete ist eine grosse Datei - die holen wir im
-  // Hintergrund, damit das Spiel sofort losgehen kann.
-  let trockeneBlumenGewuenscht = false;
-  ladeVorlage('meine-sachen/blubber-blume-trocken.glb', 0.58)
-    .then((fabrik) => {
-      macheTrockeneBlume = fabrik;
-      console.log('Vertrocknete Blubber-Blume ist da!');
-      if (trockeneBlumenGewuenscht) stelleTrockeneBlumenAuf();
-    })
-    .catch((fehler) => console.warn('Vertrocknete Blume nicht gefunden:', fehler.message));
   const planet = machePlanet();
   szene.add(planet.gruppe);
 
@@ -74,7 +50,18 @@ async function los() {
   glanz.material.blending = THREE.AdditiveBlending;
   glanz.material.depthWrite = false;
   glanz.material.opacity = 0.95;
+  // Der Lichtschein ist viel groesser als der Punkt selbst. Wuerde er
+  // Fingertipps abfangen, koennte man den Mond dahinter nicht antippen.
+  glanz.raycast = () => {};
   kern.add(glanz);
+
+  // Ein unsichtbarer Ball um den Punkt: er macht das Licht gut
+  // treffbar, ohne dass man ihn sieht.
+  const kernKlickBall = new THREE.Mesh(
+    new THREE.SphereGeometry(0.42, 10, 8),
+    new THREE.MeshBasicMaterial({ visible: false })
+  );
+  kern.add(kernKlickBall);
   const kernLicht = new THREE.PointLight(0xffe3a0, 2.2, 6, 2);
   kern.add(kernLicht);
   szene.add(kern);
@@ -95,6 +82,91 @@ async function los() {
 
   /* ---------- Schmetterlinge fliegen frei um den Planeten ---------- */
   const falter = [];
+
+  /* ================================================================
+     DEINE SELBST GEMALTEN SACHEN (aus Open Brush)
+
+     Alle deine Zeichnungen zusammen sind ueber 20 MB gross. Wuerden
+     wir sie alle beim Start laden, muesste man auf dem Handy lange
+     warten. Darum:
+
+       - das Gras kommt im Hintergrund gleich mit (das braucht man
+         schon im zweiten Kapitel)
+       - alles andere wird erst geholt, wenn die Geschichte es braucht
+
+     Fehlt eine Datei, laeuft das Spiel einfach mit den
+     Papier-Bastelmodellen weiter.
+     ================================================================ */
+  const DATEIEN = {
+    grasTrocken:  ['meine-sachen/gras-trocken.glb', 0.32],
+    grasGesund:   ['meine-sachen/gras-gesund.glb', 0.5],
+    blumeTrocken: ['meine-sachen/blubber-blume-trocken.glb', 0.4],
+    blumeGesund:  ['meine-sachen/blubber-blume.glb', 0.62],
+    baumTrocken:  ['meine-sachen/apfelbaum-trocken.glb', 0.75],
+    baumGesund:   ['meine-sachen/apfelbaum.glb', 1.05],
+  };
+
+  const eigene = {};            // name -> Fabrik, die Kopien macht
+  const amLaden = {};           // name -> Versprechen, dass es kommt
+
+  /**
+   * Holt eine deiner Zeichnungen. Beim ersten Mal wird sie aus dem
+   * Netz geladen, danach ist sie sofort da.
+   */
+  function holeVorlage(name) {
+    if (eigene[name]) return Promise.resolve(eigene[name]);
+    if (amLaden[name]) return amLaden[name];
+    const [datei, hoehe] = DATEIEN[name] || [];
+    if (!datei) return Promise.resolve(null);
+
+    amLaden[name] = ladeVorlage(datei, hoehe)
+      .then((fabrik) => {
+        eigene[name] = fabrik;
+        console.log('deine Zeichnung ist da:', name);
+        if (name === 'grasTrocken' || name === 'grasGesund') tauscheGrasGegenDeineZeichnung();
+        return fabrik;
+      })
+      .catch((fehler) => {
+        console.warn('nicht gefunden (macht nichts):', datei, fehler.message);
+        return null;
+      });
+    return amLaden[name];
+  }
+
+  // Das Gras schon mal im Hintergrund holen
+  holeVorlage('grasTrocken').then(() => holeVorlage('grasGesund'));
+
+  let trockeneBlumenGewuenscht = false;
+
+  /* --- Ein Grasbueschel bauen: deine Zeichnung, wenn sie schon da ist --- */
+  function machGras(trocken, startzahl) {
+    const fabrik = trocken ? eigene.grasTrocken : eigene.grasGesund;
+    if (fabrik) {
+      const g = fabrik();
+      g.userData.typ = trocken ? 'gras-trocken' : 'gras-gesund';
+      g.userData.antippbar = trocken;
+      g.userData.eigeneZeichnung = true;
+      return g;
+    }
+    return baueGras({ groesse: 1, trocken, startzahl });
+  }
+
+  /* --- Papier-Gras gegen deine Zeichnungen tauschen --- */
+  function tauscheGrasGegenDeineZeichnung() {
+    const alte = planet.aufgestellt.filter((o) =>
+      (o.userData.typ === 'gras-trocken' || o.userData.typ === 'gras-gesund')
+      && !o.userData.eigeneZeichnung);
+    for (const alt of alte) {
+      const trocken = alt.userData.typ === 'gras-trocken';
+      if (trocken && !eigene.grasTrocken) continue;
+      if (!trocken && !eigene.grasGesund) continue;
+      const richtung = alt.userData.richtung.clone();
+      const drehung = alt.userData.eigenDrehung || 0;
+      planet.nimmWeg(alt);
+      const neu = machGras(trocken, 1);
+      planet.stelleAuf(neu, richtung, { einsinken: 0.01, drehung });
+    }
+  }
 
   /* ================================================================
      DIE BAUSTEINE FUER DIE GESCHICHTE
@@ -310,12 +382,23 @@ async function los() {
     const typ = treffer.ding.userData.typ;
 
     if (werkzeug === 'giesskanne'
-        && (typ === 'boden' || typ === 'gras-trocken' || typ === 'setzling' || typ === 'blubber-trocken')) {
+        && (typ === 'boden' || typ === 'gras-trocken' || typ === 'setzling'
+            || typ === 'blubber-trocken' || typ === 'apfelbaum-trocken')) {
       giesseAn(treffer);
       return;
     }
     if (werkzeug === 'samentuete' && typ === 'boden') {
       pflanzeBlumeAn(treffer);
+      return;
+    }
+    if (typ === 'apfelbaum-trocken') {
+      ui.zeigeHinweis('der Baum braucht Wasser - nimm die Giesskanne');
+      setTimeout(() => ui.zeigeHinweis(''), 2500);
+      return;
+    }
+    if (typ === 'apfelbaum') {
+      klang.klangFunke();
+      ui.funkeAmBildschirm(x, y, '🍎');
       return;
     }
     if (typ === 'blubber-trocken') {
@@ -350,6 +433,11 @@ async function los() {
     const trockene = planet.aufgestellt.filter((o) =>
       o.userData.typ === 'gras-trocken' && o.userData.richtung.distanceTo(lokal) < 0.36);
     for (const alt of trockene) tauscheGrasAus(alt);
+    // vertrocknete Apfelbaeume werden wieder gruen
+    const welkeBaeume = planet.aufgestellt.filter((o) =>
+      o.userData.typ === 'apfelbaum-trocken' && o.userData.richtung.distanceTo(lokal) < 0.45);
+    for (const b of welkeBaeume) verwandleBaum(b);
+
     // vertrocknete Blubber-Blumen bluehen wieder auf
     const welke = planet.aufgestellt.filter((o) =>
       o.userData.typ === 'blubber-trocken' && o.userData.richtung.distanceTo(lokal) < 0.4);
@@ -364,13 +452,16 @@ async function los() {
     speichere();
   }
 
+  /* Aus vertrocknetem Gras wird gesundes. Weil das gesunde Bueschel
+     groesser ist, waechst es beim Giessen sichtbar auf. */
   function tauscheGrasAus(altesGras) {
     const richtung = altesGras.userData.richtung.clone();
+    const drehung = altesGras.userData.eigenDrehung || 0;
     planet.nimmWeg(altesGras);
-    const neu = baueGras({ groesse: 1, trocken: false, startzahl: Math.floor(wuerfel(1, 9999)) });
+    const neu = machGras(false, Math.floor(wuerfel(1, 9999)));
     neu.scale.setScalar(0.2);
-    planet.stelleAuf(neu, richtung, { einsinken: 0.015 });
-    lassWachsen(neu, 1);
+    planet.stelleAuf(neu, richtung, { einsinken: 0.012, drehung });
+    lassWachsen(neu, 1, 1.2);
     funkeBei(neu.getWorldPosition(new THREE.Vector3()), 4);
   }
 
@@ -394,12 +485,17 @@ async function los() {
     [0.2, -0.5, 0.84], [-0.35, 0.72, -0.6],
   ];
   let trockeneBlumenStehen = false;
-  function stelleTrockeneBlumenAuf() {
+  async function stelleTrockeneBlumenAuf() {
     trockeneBlumenGewuenscht = true;
-    if (!macheTrockeneBlume || trockeneBlumenStehen) return;
+    if (trockeneBlumenStehen) return;
+    if (!eigene.blumeTrocken) {
+      await holeVorlage('blumeTrocken');
+      holeVorlage('blumeGesund');
+    }
+    if (!eigene.blumeTrocken || trockeneBlumenStehen) return;
     trockeneBlumenStehen = true;
     TROCKENE_BLUMEN_ORTE.forEach((ort, i) => {
-      const blume = macheTrockeneBlume();
+      const blume = eigene.blumeTrocken();
       blume.userData.typ = 'blubber-trocken';
       blume.userData.antippbar = true;
       planet.stelleAuf(blume, new THREE.Vector3(...ort).normalize(),
@@ -407,13 +503,62 @@ async function los() {
     });
   }
 
+  /* --- Die vertrockneten Apfelbaeume kommen zum Vorschein --- */
+  const BAUM_ORTE = [
+    [-0.45, 0.5, 0.74], [0.72, 0.42, -0.55], [-0.3, -0.62, -0.72],
+  ];
+  let baeumeStehen = false;
+  async function stelleApfelbaeumeAuf() {
+    if (baeumeStehen) return;
+    baeumeStehen = true;
+    const fabrik = await holeVorlage('baumTrocken');
+    if (!fabrik) { baeumeStehen = false; return; }
+    BAUM_ORTE.forEach((ort, i) => {
+      const baum = fabrik();
+      baum.userData.typ = 'apfelbaum-trocken';
+      baum.userData.antippbar = true;
+      baum.scale.setScalar(0.04);
+      planet.stelleAuf(baum, new THREE.Vector3(...ort).normalize(),
+                       { einsinken: 0.01, drehung: i * 2.1 });
+      lassWachsen(baum, 1, 1.4);
+      funkeBei(baum.getWorldPosition(new THREE.Vector3()), 6);
+    });
+    klang.klangFunke();
+    // die gruene Version schon mal im Hintergrund holen
+    holeVorlage('baumGesund');
+  }
+
+  /* --- Aus einem vertrockneten Apfelbaum wird ein voller --- */
+  function verwandleBaum(alterBaum) {
+    const fabrik = eigene.baumGesund;
+    if (!fabrik) {
+      // noch nicht geladen: holen und dann verwandeln
+      holeVorlage('baumGesund').then((f) => { if (f) verwandleBaum(alterBaum); });
+      ui.zeigeHinweis('der Baum wacht auf ...');
+      setTimeout(() => ui.zeigeHinweis(''), 2000);
+      return null;
+    }
+    const richtung = alterBaum.userData.richtung.clone();
+    const drehung = alterBaum.userData.eigenDrehung || 0;
+    planet.nimmWeg(alterBaum);
+    const neu = fabrik();
+    neu.userData.typ = 'apfelbaum';
+    neu.userData.antippbar = true;
+    neu.scale.setScalar(0.15);
+    planet.stelleAuf(neu, richtung, { einsinken: 0.012, drehung });
+    lassWachsen(neu, 1, 1.8);
+    klang.klangWachsen();
+    funkeBei(neu.getWorldPosition(new THREE.Vector3()), 12);
+    return neu;
+  }
+
   /* --- Aus vertrocknet wird aufgebluecht --- */
   function verwandleBlume(alteBlume) {
     const richtung = alteBlume.userData.richtung.clone();
     const drehung = alteBlume.userData.eigenDrehung || 0;
     planet.nimmWeg(alteBlume);
-    if (!macheBlubberBlume) return null;
-    const neue = macheBlubberBlume();
+    if (!eigene.blumeGesund) return null;
+    const neue = eigene.blumeGesund();
     neue.userData.typ = 'blubber-blume';
     neue.userData.antippbar = true;
     neue.scale.setScalar(0.02);
@@ -426,12 +571,12 @@ async function los() {
 
   /* --- Die selbst gemalte Blubber-Blume waechst aus dem nassen Boden --- */
   function pflanzeBlubberBlume(lokaleRichtung) {
-    if (!macheBlubberBlume) return null;
+    if (!eigene.blumeGesund) return null;
     // ein bisschen neben die Stelle, damit sie nicht im Gras steckt
     const daneben = lokaleRichtung.clone()
       .add(new THREE.Vector3(wuerfel(-0.13, 0.13), wuerfel(-0.13, 0.13), wuerfel(-0.13, 0.13)))
       .normalize();
-    const blume = macheBlubberBlume();
+    const blume = eigene.blumeGesund();
     blume.userData.typ = 'blubber-blume';
     blume.userData.antippbar = true;
     blume.scale.setScalar(0.02);
@@ -445,7 +590,7 @@ async function los() {
   function pflanzeBlumeAn(treffer) {
     const lokal = planet.gruppe.worldToLocal(treffer.punkt.clone()).normalize();
     // jede dritte Blume ist eine selbst gemalte Blubber-Blume
-    if (macheBlubberBlume && zustand.gepflanzt % 3 === 2) {
+    if (eigene.blumeGesund && zustand.gepflanzt % 3 === 2) {
       const b = pflanzeBlubberBlume(lokal);
       if (b) {
         planet.maleGruen(lokal, 0.2, 0.5);
@@ -537,7 +682,8 @@ async function los() {
     weckeWelt, zeigePlanet, lasseWeltWachsen, funkeBei,
     lassWachsen, tauscheGrasAus, macheBaumAus, speichere, pflanzeBlubberBlume,
     giesseAn, pflanzeBlumeAn, freiesSpiel,
-    stelleTrockeneBlumenAuf, verwandleBlume,
+    stelleTrockeneBlumenAuf, verwandleBlume, machGras, eigene,
+    holeVorlage, stelleApfelbaeumeAuf, verwandleBaum,
     bauer: { baueGras, baueBlume, baueBaum, baueBusch, bauePilz, baueSetzling, baueStein,
              baueSchmetterling, baueHaeschen, baueWolke, baueGiesskanne, baueSamentuete, baueSchimmer },
     setzeKapitel(n) { zustand.kapitel = n; speichere(); },
@@ -602,7 +748,7 @@ async function los() {
     } else {
       // Buehne: gut sichtbar vor der Kamera, etwas zur Seite
       const ziel = kamera.localToWorld(new THREE.Vector3(
-        1.0 * mondBahn.buehneSeite, 0.18, -3.1
+        0.5 * mondBahn.buehneSeite, 0.14, -3.05
       ));
       mond.position.lerp(ziel, 1 - Math.pow(0.004, schritt));
       // Die Sprechblase folgt dem Mond

@@ -75,8 +75,12 @@ html, body {
 .blase {
   position: fixed;
   z-index: 20;
-  max-width: min(78vw, 420px);
-  min-width: 180px;
+  /* Feste Breite ist wichtig! Ohne sie richtet der Browser die Breite
+     nach dem Platz bis zum rechten Fensterrand - dann wird die Blase
+     ganz schmal, sobald Lunix rechts schwebt, und der Text bricht
+     nach jedem zweiten Wort um. */
+  width: min(80vw, 340px);
+  box-sizing: border-box;
   padding: 16px 18px 14px;
   background: var(--papier);
   color: var(--tinte);

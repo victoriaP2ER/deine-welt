@@ -230,9 +230,10 @@ const kapitel = [
       trockene.slice(0, 3).forEach((g) => s.tauscheGrasAus(g));
       s.planet.maleGruen(v(ORTE.grasTrocken[0]), 0.4, 1);
       s.planet.maleGruen(v(ORTE.grasTrocken[1]), 0.4, 1);
-      s.planet.wachseAuf(0.70);
-      s.planet.setzeRadius(0.70);
+      s.planet.wachseAuf(0.78);
+      s.planet.setzeRadius(0.78);
       enthuelleNeuesStueck(s, 0, false);
+      s.stelleApfelbaeumeAuf();
     },
     spiel: async (s) => {
       const anfang = s.zaehle('gras-trocken');
@@ -251,13 +252,56 @@ const kapitel = [
         'Hast du das gesehen?!',
         'Er ist ein kleines Stueck groesser geworden!',
         'So ist das: Wenn du ihm etwas Gutes tust, waechst er. Weil er sich wieder wichtig fuehlt.',
-        'Und schau - ein neues Stueck von ihm ist zum Vorschein gekommen.',
+      ], 'gluecklich');
+
+      // Weil der Planet gewachsen ist, kommt ein Stueck von ihm zum
+      // Vorschein, das vorher nicht da war: seine Apfelbaeume.
+      await s.stelleApfelbaeumeAuf();
+      await s.warte(1.4);
+      await s.mondSagt([
+        'Warte mal ... da ist noch etwas!',
+        'Seine Apfelbaeume! Die hatte ich ganz vergessen.',
+        'Sie sind auch alle vertrocknet. Giess sie doch mal.',
+      ], 'staunen');
+    },
+  },
+
+  /* ---------------------------------------------------------------
+     4 - DIE APFELBAEUME AUFWECKEN
+     --------------------------------------------------------------- */
+  {
+    id: 'die-apfelbaeume',
+    sofort: (s) => {
+      s.planet.wachseAuf(0.92);
+      s.planet.setzeRadius(0.92);
+      // die Baeume stehen schon gruen da
+      s.stelleApfelbaeumeAuf().then(() => {
+        const welke = s.planet.aufgestellt.filter((o) => o.userData.typ === 'apfelbaum-trocken');
+        welke.forEach((b) => s.verwandleBaum(b));
+      });
+      enthuelleNeuesStueck(s, 2, false);
+    },
+    spiel: async (s) => {
+      await s.warteBis(
+        () => s.zaehle('apfelbaum-trocken') === 0 && s.zaehle('apfelbaum') > 0,
+        'giesse die vertrockneten Apfelbaeume'
+      );
+      await s.warte(1.8);
+
+      s.lasseWeltWachsen(0.1);
+      enthuelleNeuesStueck(s, 2);
+      await s.warte(1);
+
+      await s.mondSagt([
+        'Aepfel! Richtige, echte Aepfel!',
+        'Weisst du, was das Beste an einem Baum ist? Er bleibt.',
+        'Auch wenn du mal nicht da bist.',
       ], 'gluecklich');
     },
   },
 
   /* ---------------------------------------------------------------
-     4 - SAMEN PFLANZEN
+     5 - SAMEN PFLANZEN
      --------------------------------------------------------------- */
   {
     id: 'samen-pflanzen',
@@ -304,45 +348,6 @@ const kapitel = [
       await s.mondSagt([
         'Ohhh. Er hat Blumen.',
         'Er hatte noch nie Blumen.',
-      ], 'gluecklich');
-    },
-  },
-
-  /* ---------------------------------------------------------------
-     5 - DER BAUM
-     --------------------------------------------------------------- */
-  {
-    id: 'der-baum',
-    sofort: (s) => {
-      const baum = s.bauer.baueBaum({ groesse: 0.9, startzahl: 7 });
-      s.planet.stelleAuf(baum, v(ORTE.setzling), { einsinken: 0.02 });
-      s.planet.maleGruen(v(ORTE.setzling), 0.4, 0.9);
-      s.planet.wachseAuf(0.87);
-      s.planet.setzeRadius(0.87);
-      enthuelleNeuesStueck(s, 2, false);
-    },
-    spiel: async (s) => {
-      const setzling = s.bauer.baueSetzling({ groesse: 1, startzahl: 3 });
-      setzling.scale.setScalar(0.05);
-      s.planet.stelleAuf(setzling, v(ORTE.setzling), { einsinken: 0.015 });
-      s.lassWachsen(setzling, 1, 1);
-      s.klang.klangFunke();
-
-      await s.mondSagt([
-        'Oh schau! Da ist von ganz allein etwas gewachsen.',
-        'Ein kleiner Baum-Setzling. Giess ihn doch mal!',
-      ], 'staunen');
-
-      await s.warteBis(() => s.zaehle('setzling') === 0, 'giesse den kleinen Setzling');
-
-      await s.warte(1.6);
-      s.lasseWeltWachsen(0.09);
-      enthuelleNeuesStueck(s, 2);
-      await s.warte(1);
-
-      await s.mondSagt([
-        'Ein Baum! Ein richtiger, echter Baum!',
-        'Weisst du, was das Beste ist? Ein Baum bleibt. Auch wenn du mal nicht da bist.',
       ], 'gluecklich');
     },
   },

@@ -172,6 +172,9 @@ export function machePlanet() {
   function setzeRadius(r) {
     zustand.radius = r;
     boden.scale.setScalar(r);
+    // Solange der Planet noch winzig ist, ist er gar nicht da: sonst
+    // wuerde die unsichtbare Mini-Kugel schon Fingertipps abfangen.
+    boden.visible = r > 0.04;
     for (const o of aufgestellt) richteAus(o);
   }
   setzeRadius(zustand.radius);

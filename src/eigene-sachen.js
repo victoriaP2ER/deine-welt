@@ -76,7 +76,13 @@ function machePassend(modell, zielHoehe = 0.55) {
   const kasten = new THREE.Box3().setFromObject(modell);
   const groesse = kasten.getSize(new THREE.Vector3());
   const groesste = Math.max(groesse.x, groesse.y, groesse.z) || 1;
-  const faktor = zielHoehe / groesste;
+
+  /* Wir messen die HOEHE, nicht die Breite: sonst wuerde eine breit
+     gemalte Blume ganz flach und winzig auf dem Planeten stehen.
+     Bei sehr flachen Sachen (einem Teppich zum Beispiel) nehmen wir
+     einen Teil der Gesamtgroesse, damit sie nicht riesig werden.     */
+  const bezug = Math.max(groesse.y, groesste * 0.42);
+  const faktor = zielHoehe / bezug;
 
   const huelle = new THREE.Group();
   modell.scale.setScalar(faktor);

@@ -44,7 +44,7 @@ async function los() {
   let macheTrockeneBlume = null;
 
   try {
-    macheBlubberBlume = await ladeVorlage('meine-sachen/blubber-blume.glb', 0.52);
+    macheBlubberBlume = await ladeVorlage('meine-sachen/blubber-blume.glb', 0.62);
     console.log('Blubber-Blume ist da!');
   } catch (fehler) {
     console.warn('Blubber-Blume nicht gefunden, macht nichts:', fehler.message);
@@ -53,7 +53,7 @@ async function los() {
   // Die vertrocknete ist eine grosse Datei - die holen wir im
   // Hintergrund, damit das Spiel sofort losgehen kann.
   let trockeneBlumenGewuenscht = false;
-  ladeVorlage('meine-sachen/blubber-blume-trocken.glb', 0.5)
+  ladeVorlage('meine-sachen/blubber-blume-trocken.glb', 0.58)
     .then((fabrik) => {
       macheTrockeneBlume = fabrik;
       console.log('Vertrocknete Blubber-Blume ist da!');
@@ -374,9 +374,12 @@ async function los() {
   }
 
   /* --- Die vertrockneten Blubber-Blumen hinstellen --- */
+  // Die vertrocknete Blubber-Blume ist eine sehr aufwendige Zeichnung
+  // (63.000 Dreiecke), darum stehen vier davon auf dem Planeten - so
+  // bleibt es auch auf dem Handy fluessig.
   const TROCKENE_BLUMEN_ORTE = [
-    [0.55, 0.36, 0.75], [-0.62, 0.3, 0.72], [0.2, -0.5, 0.84],
-    [-0.35, 0.72, -0.6], [0.78, -0.15, -0.6],
+    [0.55, 0.36, 0.75], [-0.62, 0.3, 0.72],
+    [0.2, -0.5, 0.84], [-0.35, 0.72, -0.6],
   ];
   let trockeneBlumenStehen = false;
   function stelleTrockeneBlumenAuf() {

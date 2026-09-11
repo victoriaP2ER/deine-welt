@@ -431,6 +431,12 @@ export function baueStein({ groesse = 1, startzahl = 1 } = {}) {
 export function baueSeerose({ groesse = 1, sorte = 'weiss', startzahl = 1 } = {}) {
   const w = machWuerfel(startzahl * 7919 + 101);
   const rose = new THREE.Group();
+  /* WICHTIG: geschaukelt wird nur in dieser inneren Gruppe.
+     Wuerde die Seerose selbst gedreht, waere die Ausrichtung weg,
+     mit der sie auf den See gelegt wurde - dann liegt sie auf einmal
+     hochkant im Wasser. */
+  const wiege = new THREE.Group();
+  rose.add(wiege);
   const blattFarben = FARBEN.blueten[sorte] || FARBEN.blueten.weiss;
 
   /* --- die flachen runden Blätter, die auf dem Wasser liegen --- */
@@ -448,7 +454,7 @@ export function baueSeerose({ groesse = 1, sorte = 'weiss', startzahl = 1 } = {}
     b.rotation.z = w(0, Math.PI * 2);
     blaetter.add(b);
   }
-  rose.add(blaetter);
+  wiege.add(blaetter);
   backeZusammen(blaetter);
 
   /* --- die Blüte in der Mitte --- */
@@ -475,7 +481,7 @@ export function baueSeerose({ groesse = 1, sorte = 'weiss', startzahl = 1 } = {}
   mitte.rotation.x = -Math.PI / 2;
   mitte.position.y = 0.022 * groesse;
   bluete.add(mitte);
-  rose.add(bluete);
+  wiege.add(bluete);
   backeZusammen(bluete);
 
   rose.userData.typ = 'seerose';
@@ -483,8 +489,8 @@ export function baueSeerose({ groesse = 1, sorte = 'weiss', startzahl = 1 } = {}
   rose.userData.hoehe = 0.12 * groesse;
   rose.userData.belebe = (zeit) => {
     // sie schaukelt ganz sacht auf dem Wasser
-    rose.rotation.z = Math.sin(zeit * 0.9 + startzahl) * 0.02;
-    rose.rotation.x = Math.cos(zeit * 0.7 + startzahl) * 0.016;
+    wiege.rotation.z = Math.sin(zeit * 0.9 + startzahl) * 0.02;
+    wiege.rotation.x = Math.cos(zeit * 0.7 + startzahl) * 0.016;
     bluete.position.y = 0.03 + Math.sin(zeit * 1.4 + startzahl) * 0.006;
   };
   return rose;

@@ -37,6 +37,16 @@ const ORTE = {
 
 const v = (a) => new THREE.Vector3(a[0], a[1], a[2]).normalize();
 
+/* Wo sitzt das Haeschen? Direkt vor seiner Hoehle - dicht genug,
+   dass man sieht, dass sie zusammengehoeren, aber weit genug, dass
+   es nicht in ihr steckt. */
+function vorDerHoehle(s, hoehle, ersatz, hase) {
+  const heim = (hoehle && hoehle.userData.richtung) ? hoehle.userData.richtung : ersatz;
+  const abstand = (hoehle ? s.platzBedarf(hoehle) : 0.25) + s.platzBedarf(hase) + 0.06;
+  const winkel = abstand / Math.max(0.4, s.planet.radius);
+  return s.freieStelle(s.danebenAn(heim, winkel, 1.9), s.platzBedarf(hase), hase);
+}
+
 /* ================================================================
    Hilfen, die mehrere Kapitel brauchen
    ================================================================ */
@@ -470,11 +480,11 @@ const kapitel = [
     id: 'das-häschen',
     sofort: (s) => {
       const zuhause = v(ORTE.haeschen);
-      s.stelleHoehleAuf(zuhause);
       const hase = s.bauer.baueHaeschen({ groesse: 1, startzahl: 5 });
-      s.planet.stelleAuf(hase,
-        zuhause.clone().add(new THREE.Vector3(0.07, 0.04, 0.07)).normalize(),
-        { einsinken: 0.01 });
+      s.stelleHoehleAuf(zuhause).then((hoehle) => {
+        s.planet.stelleAuf(hase, vorDerHoehle(s, hoehle, zuhause, hase),
+                           { einsinken: 0.01 });
+      });
       s.planet.wachseAuf(1.06);
       s.planet.setzeRadius(1.06);
       enthuelleNeuesStueck(s, 4, false);
@@ -492,14 +502,12 @@ const kapitel = [
 
       // Zuerst die Hoehle, die du gemalt hast - dann sitzt das
       // Haeschen davor, als haette es sich hier haeuslich eingerichtet.
-      await s.stelleHoehleAuf(versteck);
+      const hoehle = await s.stelleHoehleAuf(versteck);
 
-      // ein kleines Stueck neben der Hoehle, damit man beides sieht
-      const daneben = versteck.clone()
-        .add(new THREE.Vector3(0.07, 0.04, 0.07)).normalize();
       const hase = s.bauer.baueHaeschen({ groesse: 1, startzahl: 5 });
       hase.scale.setScalar(0.05);
-      s.planet.stelleAuf(hase, daneben, { einsinken: 0.01 });
+      s.planet.stelleAuf(hase, vorDerHoehle(s, hoehle, versteck, hase),
+                         { einsinken: 0.01 });
       s.lassWachsen(hase, 1, 1);
       s.klang.klangTier();
 

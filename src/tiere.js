@@ -82,15 +82,34 @@ export function baueHaeschen({ groesse = 1, startzahl = 1 } = {}) {
   const hase = new THREE.Group();
   const koerperFarbe = '#fdf6ea';
 
-  /* --- Koerper (mehrere Kleckse = rund) --- */
+  /* --- Koerper ---
+     Aus Schnipseln etwas Rundes bauen ist ein kleiner Trick: die
+     senkrechten Scheiben geben die Form von der Seite, die
+     waagerechten sorgen dafuer, dass er auch von OBEN rund aussieht.
+     Nur mit senkrechten sah der Hase von oben platt aus wie ein
+     Blatt Papier.                                                  */
   const rumpf = new THREE.Group();
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 5; i++) {
     const k = macheSchnipsel({
-      bild: 'klecks', farbe: tone(koerperFarbe, i === 0 ? 0.02 : -0.03 * i), hoehe: 0.2 * groesse, woelbung: 0.07 * groesse,
+      bild: 'klecks', farbe: tone(koerperFarbe, i === 0 ? 0.02 : -0.025 * i),
+      hoehe: 0.2 * groesse, woelbung: 0.07 * groesse,
     });
-    const winkel = (i / 4) * Math.PI * 2;
-    k.position.set(Math.cos(winkel) * 0.025 * groesse, 0.1 * groesse, Math.sin(winkel) * 0.025 * groesse);
+    const winkel = (i / 5) * Math.PI;
+    k.position.set(Math.cos(winkel) * 0.02 * groesse, 0.1 * groesse,
+                   Math.sin(winkel) * 0.02 * groesse);
     k.rotation.y = winkel;
+    rumpf.add(k);
+  }
+  for (let i = 0; i < 3; i++) {
+    const t = (i + 0.5) / 3;                  // 0 unten ... 1 oben
+    const breit = Math.sin(t * Math.PI) * 0.17 + 0.07;
+    const k = macheSchnipsel({
+      bild: 'klecks', farbe: tone(koerperFarbe, 0.03 - i * 0.03),
+      hoehe: breit * groesse, woelbung: 0.05 * groesse,
+    });
+    k.rotation.x = -Math.PI / 2;
+    k.rotation.z = i * 1.1;
+    k.position.y = (0.025 + t * 0.16) * groesse;
     rumpf.add(k);
   }
   hase.add(rumpf);
@@ -98,13 +117,26 @@ export function baueHaeschen({ groesse = 1, startzahl = 1 } = {}) {
   /* --- Kopf --- */
   const kopf = new THREE.Group();
   kopf.position.set(0, 0.21 * groesse, 0.045 * groesse);
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 4; i++) {
     const k = macheSchnipsel({
-      bild: 'klecks', farbe: tone(koerperFarbe, 0.02 - i * 0.02), hoehe: 0.145 * groesse, woelbung: 0.05 * groesse,
+      bild: 'klecks', farbe: tone(koerperFarbe, 0.02 - i * 0.018),
+      hoehe: 0.145 * groesse, woelbung: 0.05 * groesse,
     });
-    const winkel = (i / 3) * Math.PI * 2;
-    k.position.set(Math.cos(winkel) * 0.018 * groesse, 0, Math.sin(winkel) * 0.018 * groesse);
+    const winkel = (i / 4) * Math.PI;
+    k.position.set(Math.cos(winkel) * 0.015 * groesse, 0,
+                   Math.sin(winkel) * 0.015 * groesse);
     k.rotation.y = winkel;
+    kopf.add(k);
+  }
+  // auch der Kopf bekommt waagerechte Scheiben, damit er rund wirkt
+  for (let i = 0; i < 2; i++) {
+    const k = macheSchnipsel({
+      bild: 'klecks', farbe: tone(koerperFarbe, 0.02 - i * 0.03),
+      hoehe: (0.13 - i * 0.035) * groesse, woelbung: 0.04 * groesse,
+    });
+    k.rotation.x = -Math.PI / 2;
+    k.rotation.z = i * 0.9;
+    k.position.y = (-0.03 + i * 0.075) * groesse;
     kopf.add(k);
   }
   /* --- Gesicht --- */

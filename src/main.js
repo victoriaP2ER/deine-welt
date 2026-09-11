@@ -153,7 +153,7 @@ async function los() {
     // Ein See darf ruhig etwas ausladend sein
     seeVoll:      ['meine-sachen/see-voll.glb', 0.88],
     seeLeer:      ['meine-sachen/see-leer.glb', 0.88],
-    haeschenHoehle: ['meine-sachen/haeschen-hoehle.glb', 0.42],
+    haeschenHoehle: ['meine-sachen/haeschen-hoehle.glb', 0.5],
   };
 
   const eigene = {};            // name -> Fabrik, die Kopien macht
@@ -766,7 +766,11 @@ async function los() {
     see.userData.keinTrefferBall = true;
     machRuhig(see);
     see.scale.setScalar(0.04);
-    const richtung = new THREE.Vector3(...SEE_ORTE[nummer]).normalize();
+    // Ein See ist gross - er sucht sich eine Stelle, an der nichts
+    // Grosses im Weg steht (keine Hoehle, kein Baum, kein anderer See).
+    const richtung = freieStelle(
+      new THREE.Vector3(...SEE_ORTE[nummer]).normalize(),
+      platzBedarf(see) * 1.15);
 
     // Der Planet macht an dieser Stelle eine ebene Fläche - so wie
     // ein Tisch, auf den der See genau passt.
@@ -795,6 +799,38 @@ async function los() {
     // die gefüllte Fassung schon mal vorbereiten
     if (leerVorhanden) holeVorlage('seeVoll');
     return see;
+  }
+
+  /* Wie hoch steht das Wasser ueber dem Boden des Sees?
+     Eine Seerose schwimmt OBEN auf dem Wasser. Der See ist aber ein
+     ganzer gemalter Klumpen Wasser - legt man die Seerose auf seinen
+     Boden, liegt sie unter Wasser und man sieht sie nicht mehr.   */
+  function merkeWasserHoehe(see) {
+    see.updateMatrixWorld(true);
+    const hin = see.userData.richtung.clone()
+      .applyQuaternion(planet.gruppe.quaternion).normalize();
+    const ursprung = see.getWorldPosition(new THREE.Vector3());
+    const hoehen = [];
+    const p = new THREE.Vector3();
+    see.traverse((teil) => {
+      if (!teil.isMesh || !teil.visible) return;
+      if (!teil.geometry || !teil.geometry.attributes.position) return;
+      const pos = teil.geometry.attributes.position;
+      const schritt = Math.max(1, Math.floor(pos.count / 150));
+      for (let i = 0; i < pos.count; i += schritt) {
+        p.fromBufferAttribute(pos, i);
+        teil.localToWorld(p);
+        hoehen.push(p.sub(ursprung).dot(hin));
+      }
+    });
+    if (hoehen.length < 20) return;
+    hoehen.sort((a, b) => a - b);
+    /* Die MITTLERE Hoehe ist die Wasseroberflaeche: darunter liegt
+       das gemalte Wasser, darueber stehen nur noch Schilf und ein
+       paar hohe Striche. Nimmt man die hoechsten Punkte, schwebt die
+       Seerose ueber dem See in der Luft.                           */
+    see.userData.wasserHoehe =
+      Math.max(0, hoehen[Math.floor(hoehen.length * 0.5)]);
   }
 
   /* Wie viel groesser muss der volle See sein, damit er genau so
@@ -889,6 +925,7 @@ async function los() {
     });
     // kein Wachsen wie bei einer Pflanze - nur ein Anschwellen
     lassWachsen(voll, angleich * SEE_ANSCHWELLEN, 1.4, angleich);
+    merkeWasserHoehe(voll);
 
     // und der leere See verblasst sanft darunter weg
     leererSee.userData.typ = 'vergeht';
@@ -924,6 +961,63 @@ async function los() {
     return planet.gruppe.worldToLocal(weg).normalize();
   }
 
+  /* ==================================================================
+     PLATZ AUF DEM PLANETEN
+
+     Ein See, eine Hoehle und ein Haeschen sollen nicht ineinander
+     stecken. Darum bekommt jedes grosse Ding einen Platz, an dem
+     wirklich noch Platz ist.
+     ================================================================== */
+  // Diese Sachen brauchen Ellenbogenfreiheit (Gras und Blumen nicht)
+  const BRAUCHT_PLATZ = ['see', 'see-leer', 'hoehle', 'haeschen',
+                         'apfelbaum', 'apfelbaum-trocken', 'baum'];
+
+  /** Wie viel Platz braucht dieses Ding auf dem Boden? (echtes Maß) */
+  function platzBedarf(objekt) {
+    const g = objekt.scale ? (objekt.scale.x || 1) : 1;
+    const m = objekt.userData.masse;
+    if (m) return Math.max(m.x, m.z) * 0.5 * g;
+    return (objekt.userData.hoehe || 0.25) * 0.6 * g;
+  }
+
+  /** Ein Stück zur Seite auf der Kugel - in eine bestimmte Richtung.
+   *    winkel  = wie weit (im Bogenmaß)
+   *    drehung = in welche Himmelsrichtung                          */
+  function danebenAn(richtung, winkel, drehung) {
+    const hin = richtung.clone().normalize();
+    const quer = new THREE.Vector3(0, 1, 0).cross(hin);
+    if (quer.lengthSq() < 0.02) quer.set(1, 0, 0);
+    quer.normalize();
+    const quer2 = hin.clone().cross(quer).normalize();
+    const seite = quer.multiplyScalar(Math.cos(drehung))
+      .addScaledVector(quer2, Math.sin(drehung));
+    return hin.multiplyScalar(Math.cos(winkel))
+      .addScaledVector(seite, Math.sin(winkel)).normalize();
+  }
+
+  /** Sucht in der Nähe eine Stelle, an der nichts Großes im Weg steht. */
+  function freieStelle(richtung, brauchtPlatz, ausser = null) {
+    const r = Math.max(0.4, planet.radius);
+    const passt = (d) => planet.aufgestellt.every((o) => {
+      if (o === ausser) return true;
+      if (!BRAUCHT_PLATZ.includes(o.userData.typ)) return true;
+      if (!o.userData.richtung) return true;
+      const noetig = brauchtPlatz + platzBedarf(o);
+      return d.angleTo(o.userData.richtung) * r > noetig;
+    });
+    if (passt(richtung)) return richtung.clone().normalize();
+    // in immer größeren Kreisen drumherum weitersuchen
+    for (let ring = 1; ring <= 7; ring++) {
+      const winkel = Math.min(1.4, (brauchtPlatz * 0.9 * ring) / r);
+      for (let i = 0; i < 9; i++) {
+        const kandidat = danebenAn(richtung, winkel,
+                                   (i / 9) * Math.PI * 2 + ring * 0.35);
+        if (passt(kandidat)) return kandidat;
+      }
+    }
+    return richtung.clone().normalize();
+  }
+
   /* --- Die Höhle vom Häschen ---
      Du hast dem Häschen eine kleine Höhle gemalt. Sie kommt genau an
      die Stelle, an der sich das Häschen versteckt: dann hat es ein
@@ -936,7 +1030,8 @@ async function los() {
     hoehle.userData.antippbar = true;
     hoehle.userData.belebe = null;        // eine Höhle wackelt nicht
     hoehle.scale.setScalar(0.05);
-    planet.stelleAuf(hoehle, richtung, {
+    const platz = freieStelle(richtung, platzBedarf(hoehle) * 1.3);
+    planet.stelleAuf(hoehle, platz, {
       einsinken: 0.06,
       drehung: wuerfel(0, 6.28),
     });
@@ -1069,10 +1164,13 @@ async function los() {
     const seeRichtung = derSee ? derSee.userData.richtung : null;
     const wieWeitVomSee = seeRichtung
       ? ort.angleTo(seeRichtung) * Math.max(0.4, planet.radius) : 0;
+    // Und sie liegt OBEN auf dem Wasser, nicht auf dem Grund.
+    const obenAufDemWasser = derSee
+      ? (derSee.userData.wasserHoehe || 0) + 0.04 : 0;
 
     planet.stelleAuf(rose, ort, {
       einsinken: 0,
-      einsinkenAbsolut: SEE_TIEFE_VOLL,
+      einsinkenAbsolut: SEE_TIEFE_VOLL - obenAufDemWasser,
       flachBreite: wieWeitVomSee * 2,
       ausrichtung: seeRichtung,
       drehung: wuerfel(0, 6.28),
@@ -1223,7 +1321,7 @@ async function los() {
     stelleTrockeneBlumenAuf, verwandleBlume, machGras, eigene,
     holeVorlage, stelleApfelbaeumeAuf, verwandleBaum, rueckseite,
     lassSeeErscheinen, fuelleSee, pflanzeSeerose, istAufDemSee, stelleSeenWiederHer,
-    stelleHoehleAuf,
+    stelleHoehleAuf, freieStelle, danebenAn, platzBedarf,
     bauer: { baueGras, baueBlume, baueBaum, baueBusch, bauePilz, baueSetzling, baueStein,
              baueSchmetterling, baueHaeschen, baueWolke, baueGiesskanne, baueSamentuete, baueSchimmer },
     setzeKapitel(n) { zustand.kapitel = n; speichere(); },

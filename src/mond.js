@@ -102,7 +102,13 @@ export function baueMond() {
        antippen, was dahinter liegt (zum Beispiel den Planeten).
        Darum sind sie für Beruehrungen unsichtbar.                  */
     ringe.traverse((teil) => {
-      if (teil.isMesh) teil.raycast = () => {};
+      if (!teil.isMesh) return;
+      teil.raycast = () => {};
+      /* Und sie werfen keinen Schatten. Der Mond selbst wirft auch
+         keinen - er ist viel zu weit weg. Nur die Ringe warfen einen,
+         und dann lag ploetzlich ein Schatten auf dem Planeten, zu
+         dem gar nichts gehoerte.                                   */
+      teil.castShadow = false;
     });
   }
 

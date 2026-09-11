@@ -26,7 +26,13 @@ export function setzeTitelHinweis(text) {
 
 /* ---------- Hinweiszeile unten ---------- */
 let letzterHinweis = '';
+let weiterHandler = null;
+
 export function zeigeHinweis(text) {
+  /* Solange ein "weiter"-Knopf da ist, gehoert diese Zeile ihm.
+     Sonst kann ein alter Zeitgeber ("Hinweis wieder ausblenden")
+     den Knopf einfach wegraeumen - und man kommt nicht mehr weiter. */
+  if (weiterHandler) return;
   if (text === letzterHinweis) return;
   letzterHinweis = text;
   if (!text) {
@@ -178,8 +184,6 @@ export function hatWerkzeug(name) { return werkzeuge.has(name); }
    Nach einem schönen Moment darf man sich in Ruhe umsehen. Die
    Hinweiszeile wird dann zu einem Knopf: erst wenn man ihn antippt
    (oder Lunix), geht die Geschichte weiter.                          */
-let weiterHandler = null;
-
 export function zeigeWeiterHinweis(text, handler) {
   weiterHandler = handler;
   teile.hinweis.innerHTML = text

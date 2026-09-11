@@ -564,20 +564,22 @@ const kapitel = [
       await s.warte(1.2);
 
       // Jetzt ist der Planet groß genug für etwas Großes: einen See.
-      await s.lassSeeErscheinen();
+      const see = await s.lassSeeErscheinen();
       await s.warte(1.5);
+      // Lunix fliegt zum See hinunter, damit man sieht, wovon er redet
       await s.mondSagt([
         'Oh! Schau mal, was da zum Vorschein gekommen ist.',
         'Ein ausgetrockneter See. Den gab es früher mal, als es hier noch Wasser gab.',
         'Giess ihn doch voll!',
-      ], 'staunen');
+      ], 'staunen', see);
       await s.warteBis(() => s.zaehle('see') > 0, 'giesse den ausgetrockneten See');
       await s.warte(3);
+      const voll = s.planet.aufgestellt.find((o) => o.userData.typ === 'see');
       await s.mondSagt([
         'Wasser! Richtiges Wasser!',
         'Weisst du was? Streu doch mal Blumensamen aufs Wasser.',
         'Dann wachsen dort Seerosen.',
-      ], 'gluecklich');
+      ], 'gluecklich', voll);
 
       await s.mondSagt([
         'Du kannst weitermachen, so lange du magst.',

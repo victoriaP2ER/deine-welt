@@ -145,6 +145,59 @@ function machePassend(modell, zielHoehe = 0.55) {
   const groesse = kasten.getSize(new THREE.Vector3());
   const groesste = Math.max(groesse.x, groesse.y, groesse.z) || 1;
 
+  /* Wie weit reicht jeder einzelne Pinsel von der Mitte weg?
+     Damit kann man zwei Zeichnungen aneinander ausrichten, die
+     denselben Kern haben - zum Beispiel den leeren und den
+     gefuellten See: beide sind mit denselben Pinseln gemalt, im
+     vollen kommen nur Wasser und Pflanzen dazu. Vergleicht man nur
+     die gemeinsamen Pinsel, weiss man genau, wie gross der eine
+     gegenueber dem anderen gemalt wurde.                           */
+  const teilWeiten = {};
+  const teilMitten = {};
+  {
+    // Gemessen wird, wie GROSS ein Pinsel-Teil ist (seine Kiste),
+    // nicht wo es liegt. So ist es egal, ob die Zeichnung
+    // verschoben ist - nur die Groesse zaehlt.
+    const kisten = {};
+    const p = new THREE.Vector3();
+    modell.traverse((teil) => {
+      if (!teil.isMesh || !teil.visible) return;
+      if (!teil.geometry || !teil.geometry.attributes.position) return;
+      const name = (teil.material && teil.material.name) || '?';
+      const kiste = kisten[name] || (kisten[name] = new THREE.Box3());
+      const pos = teil.geometry.attributes.position;
+      const schritt = Math.max(1, Math.floor(pos.count / 200));
+      for (let i = 0; i < pos.count; i += schritt) {
+        p.fromBufferAttribute(pos, i);
+        teil.localToWorld(p);
+        kiste.expandByPoint(p);
+      }
+    });
+    const mass = new THREE.Vector3();
+    for (const name of Object.keys(kisten)) {
+      if (kisten[name].isEmpty()) continue;
+      kisten[name].getSize(mass);
+      teilWeiten[name] = Math.max(mass.x, mass.y, mass.z);
+      teilMitten[name] = kisten[name].getCenter(new THREE.Vector3());
+    }
+  }
+
+  /* Wie weit reicht die Zeichnung wirklich auf dem Boden?
+     Eine Kiste drumherum sagt das nicht gut: bei einem See ist die
+     Kiste voll, beim naechsten haengt nur ein einzelner Strich in
+     der Ecke. Darum schauen wir, wie weit 90 Prozent der gemalten
+     Punkte von der Mitte weg sind. Das ist die Groesse, die man
+     wirklich sieht - und damit koennen zwei Zeichnungen fair
+     verglichen werden.                                            */
+  let flaecheRadius = 0;
+  if (proben.length > 20) {
+    const m = kasten.getCenter(new THREE.Vector3());
+    const weiten = proben
+      .map((p) => Math.hypot(p.x - m.x, p.z - m.z))
+      .sort((a, b) => a - b);
+    flaecheRadius = weiten[Math.floor(weiten.length * 0.9)] || 0;
+  }
+
   /* Wir messen die HOEHE, nicht die Breite: sonst würde eine breit
      gemalte Blume ganz flach und winzig auf dem Planeten stehen.
      Bei sehr flachen Sachen (einem Teppich zum Beispiel) nehmen wir
@@ -169,6 +222,16 @@ function machePassend(modell, zielHoehe = 0.55) {
     y: groesse.y * faktor,
     z: groesse.z * faktor,
   };
+  huelle.userData.flaecheRadius = flaecheRadius * faktor;
+  huelle.userData.teilWeiten = {};
+  huelle.userData.teilMitten = {};
+  for (const name of Object.keys(teilWeiten)) {
+    huelle.userData.teilWeiten[name] = teilWeiten[name] * faktor;
+    // die Mitte jedes Pinsel-Teils, umgerechnet auf die fertige
+    // Zeichnung - damit zwei Zeichnungen genau uebereinander passen
+    huelle.userData.teilMitten[name] = teilMitten[name].clone()
+      .multiplyScalar(faktor).add(modell.position);
+  }
   huelle.userData.belebe = (zeit) => {
     // schwebt und dreht sich ganz sanft, damit man sie von allen Seiten sieht
     huelle.rotation.y = Math.sin(zeit * 0.25) * 0.3;
@@ -507,6 +570,9 @@ export async function ladeVorlage(pfad, hoehe = 0.5, { nachfaerben } = {}) {
     kopie.userData.phase = Math.random() * 6.28;
     kopie.userData.groesse = 1;
     kopie.userData.masse = vorlage.userData.masse;
+    kopie.userData.flaecheRadius = vorlage.userData.flaecheRadius;
+    kopie.userData.teilWeiten = vorlage.userData.teilWeiten;
+    kopie.userData.teilMitten = vorlage.userData.teilMitten;
     return kopie;
   };
 }

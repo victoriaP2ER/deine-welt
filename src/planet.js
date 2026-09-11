@@ -387,8 +387,15 @@ export function machePlanet() {
   setzeRadius(zustand.radius);
 
   /* ---------- Wachsen ---------- */
+  /* So gross darf die Welt hoechstens werden.
+     Irgendwann ist genug: sonst wird Lunix daneben zu einem
+     Puenktchen und man wischt sich die Finger wund, um einmal
+     herumzukommen. Platz ist trotzdem reichlich - bei doppeltem
+     Radius hat die Kugel schon viermal so viel Flaeche.           */
+  const HOECHSTENS = 3.2;
+
   function wachseAuf(neuerRadius) {
-    zustand.zielRadius = neuerRadius;
+    zustand.zielRadius = Math.min(neuerRadius, HOECHSTENS);
   }
 
   /* ---------- jedes Bild ---------- */

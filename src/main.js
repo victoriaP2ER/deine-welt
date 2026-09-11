@@ -661,14 +661,18 @@ async function los() {
 
   async function lassSeeErscheinen(mitFunken = true) {
     if (seenAufgestellt >= SEE_ORTE.length) return null;
-    if (planet.zielRadius < PLANET_GROSS_GENUG) {
-      // noch zu klein - der See kommt beim nächsten Mal
-      return null;
-    }
     const nummer = seenAufgestellt;
     seenAufgestellt++;
 
     if (mitFunken) ui.zeigeHinweis('Der Planet macht Platz für etwas Großes ...');
+
+    // Ist der Planet noch zu klein für einen See? Dann wächst er
+    // jetzt dafür - der See ist ja der Grund zu wachsen.
+    if (planet.zielRadius < PLANET_GROSS_GENUG) {
+      planet.wachseAuf(PLANET_GROSS_GENUG);
+      klang.klangWachsen();
+      await new Promise((fertig) => setTimeout(fertig, 2600));
+    }
 
     // erst den vertrockneten See versuchen, sonst gleich den vollen
     const fabrik = (await holeVorlage('seeLeer')) || (await holeVorlage('seeVoll'));

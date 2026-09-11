@@ -93,6 +93,7 @@ async function los() {
     schwungHoch: 0,
     griffRadius: 0.7,   // wie groß der Planet gerade ist (für 1:1-Gefuehl)
     zoom: 1,            // 1 = normal, kleiner = näher dran
+    letzterRadius: 0,   // um mitzubekommen, wenn der Planet wächst
     ziel: new THREE.Vector3(0, 0, 0),        // wohin die Kamera schaut
     zielZiel: new THREE.Vector3(0, 0, 0),    // wohin sie schauen soll
     schautZuLunix: false,
@@ -137,8 +138,8 @@ async function los() {
     blumeGesund:  ['meine-sachen/blubber-blume.glb', 0.48],
     baumTrocken:  ['meine-sachen/apfelbaum-trocken.glb', 0.5],
     baumGesund:   ['meine-sachen/apfelbaum.glb', 1.2],
-    seeVoll:      ['meine-sachen/see-voll.glb', 0.5],
-    seeLeer:      ['meine-sachen/see-leer.glb', 0.5],
+    seeVoll:      ['meine-sachen/see-voll.glb', 0.72],
+    seeLeer:      ['meine-sachen/see-leer.glb', 0.72],
   };
 
   const eigene = {};            // name -> Fabrik, die Kopien macht
@@ -363,29 +364,28 @@ async function los() {
   }
 
   /* --- GUTE TATEN ---------------------------------------------------
-     Jedes Gießen und jedes Pflanzen ist eine gute Tat. Nach jeder
-     vierten wächst der Planet ein Stück weiter - dann hat man
-     wieder Platz für Neues und kann immer weitermachen.
-     Je größer er schon ist, desto gemütlicher wächst er.       */
+     Jedes Gießen und jedes Pflanzen ist eine gute Tat.
+
+     Der Planet wächst NICHT einfach so davon - das soll man sich
+     verdienen: bei den großen Momenten der Geschichte und wenn ein
+     See voll Wasser ist.
+
+     Nur eins macht er von allein: wenn es richtig eng wird auf ihm,
+     schafft er Platz. Sonst könnte man irgendwann nichts mehr
+     pflanzen.                                                       */
   function guteTat() {
     zustand.guteTaten = (zustand.guteTaten || 0) + 1;
-    if (zustand.guteTaten % 4 !== 0) { speichere(); return; }
+    speichere();
 
-    const r = planet.zielRadius;
-    const um = r < 1.4 ? 0.075 : r < 2.2 ? 0.05 : 0.03;
-    planet.wachseAuf(r + um);
+    // Wie viele Sachen haben bei dieser Größe bequem Platz?
+    const platz = 16 * planet.zielRadius * planet.zielRadius;
+    if (planet.aufgestellt.length <= platz) return;
+
+    planet.wachseAuf(planet.zielRadius + 0.1);
     klang.klangWachsen();
-    ui.zeigeHinweis('Der Planet ist gewachsen! Jetzt ist wieder Platz.');
+    ui.zeigeHinweis('Es wird eng - der Planet macht Platz!');
     setTimeout(() => ui.zeigeHinweis(''), 3500);
-
-    // Bei jedem zweiten Wachstumsschritt kommt ein neues Stück
-    // Planet zum Vorschein - zum Beispiel ein See.
-    const wachstumsSchritt = zustand.guteTaten / 4;
-    if (wachstumsSchritt % 2 === 0) {
-      setTimeout(() => lassSeeErscheinen(), 2200);
-    }
-    // ein paar Funken rundherum, damit man es merkt
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 6; i++) {
       setTimeout(() => ui.funkeAmBildschirm(
         window.innerWidth * (0.2 + Math.random() * 0.6),
         window.innerHeight * (0.3 + Math.random() * 0.4),
@@ -742,6 +742,16 @@ async function los() {
     klang.klangGiessen();
     klang.klangAufbluehen();
     funkeBei(voll.getWorldPosition(new THREE.Vector3()), 12);
+
+    // Ein voller See ist ein großer Moment: dafür wächst der Planet -
+    // und macht dabei Platz für den nächsten.
+    setTimeout(() => {
+      planet.wachseAuf(planet.zielRadius + 0.18);
+      klang.klangWachsen();
+      ui.zeigeHinweis('Der See ist voll! Der Planet wächst.');
+      setTimeout(() => ui.zeigeHinweis(''), 3500);
+      setTimeout(() => lassSeeErscheinen(), 6000);
+    }, 2000);
     return voll;
   }
 
@@ -1081,6 +1091,17 @@ async function los() {
     } else {
       blick.zielZiel.set(0, 0, 0);
       const normal = zustand.schlaeft ? 4.6 : 2.15 + planet.radius * 2.6;
+
+      /* Wenn der Planet wächst, zoomen wir sanft mit heraus - sonst
+         würde er einem plötzlich aus dem Bild wachsen. Hat man selbst
+         am Zoom gedreht, wird der Wunsch behutsam mit angepasst. */
+      if (planet.radius > blick.letzterRadius + 0.004) {
+        const verhaeltnis = (2.15 + blick.letzterRadius * 2.6) / normal;
+        blick.zoom = THREE.MathUtils.clamp(
+          blick.zoom + (1 - verhaeltnis) * 0.55, 0.4, 1.9);
+      }
+      blick.letzterRadius = planet.radius;
+
       // Der Zoom des Spielers - aber nie so nah, dass die Kamera
       // im Planeten steckt.
       blick.zielAbstand = Math.max(planet.radius + 0.75, normal * blick.zoom);

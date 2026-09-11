@@ -551,6 +551,22 @@ const kapitel = [
       enthuelleNeuesStueck(s, 6);
       await s.warte(1.2);
 
+      // Jetzt ist der Planet groß genug für etwas Großes: einen See.
+      await s.lassSeeErscheinen();
+      await s.warte(1.5);
+      await s.mondSagt([
+        'Oh! Schau mal, was da zum Vorschein gekommen ist.',
+        'Ein ausgetrockneter See. Den gab es früher mal, als es hier noch Wasser gab.',
+        'Giess ihn doch voll!',
+      ], 'staunen');
+      await s.warteBis(() => s.zaehle('see') > 0, 'giesse den ausgetrockneten See');
+      await s.warte(3);
+      await s.mondSagt([
+        'Wasser! Richtiges Wasser!',
+        'Weisst du was? Streu doch mal Blumensamen aufs Wasser.',
+        'Dann wachsen dort Seerosen.',
+      ], 'gluecklich');
+
       await s.mondSagt([
         'Du kannst weitermachen, so lange du magst.',
         'Gieße, pflanze Blumen, streichel das Häschen. Er freut sich über jedes Mal.',

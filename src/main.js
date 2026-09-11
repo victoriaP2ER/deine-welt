@@ -103,6 +103,8 @@ async function los() {
     hochVorher: null,   // Blickhöhe vor dem Gespräch, um zurückzufinden
     lunixWeite: 1,      // Sicherheitsnetz: wie weit muss die Kamera weg,
                         // damit Lunix wirklich im Bild ist?
+    redeteGerade: false, // um das Ende eines Gesprächs zu bemerken
+    hochZurueck: null,   // dorthin kommt der Blick nach dem Gespräch
   };
 
   /** Setzt die Kamera aus den Winkeln zusammen. */
@@ -148,8 +150,9 @@ async function los() {
     blumeGesund:  ['meine-sachen/blubber-blume.glb', 0.48],
     baumTrocken:  ['meine-sachen/apfelbaum-trocken.glb', 0.5],
     baumGesund:   ['meine-sachen/apfelbaum.glb', 1.2],
-    seeVoll:      ['meine-sachen/see-voll.glb', 0.72],
-    seeLeer:      ['meine-sachen/see-leer.glb', 0.72],
+    // Ein See darf ruhig etwas ausladend sein
+    seeVoll:      ['meine-sachen/see-voll.glb', 0.88],
+    seeLeer:      ['meine-sachen/see-leer.glb', 0.88],
     haeschenHoehle: ['meine-sachen/haeschen-hoehle.glb', 0.42],
   };
 
@@ -760,6 +763,7 @@ async function los() {
     const see = fabrik();
     see.userData.typ = leerVorhanden ? 'see-leer' : 'see';
     see.userData.antippbar = true;
+    see.userData.keinTrefferBall = true;
     machRuhig(see);
     see.scale.setScalar(0.04);
     const richtung = new THREE.Vector3(...SEE_ORTE[nummer]).normalize();
@@ -854,6 +858,7 @@ async function los() {
     const voll = fabrik();
     voll.userData.typ = 'see';
     voll.userData.antippbar = true;
+    voll.userData.keinTrefferBall = true;
     machRuhig(voll);
 
     /* Der volle See ist anders gemalt als der leere. Damit beim
@@ -1037,30 +1042,39 @@ async function los() {
   function pflanzeSeerose(lokaleRichtung, see) {
     const sorten = ['weiss', 'rosa', 'gelb'];
     const rose = baueSeerose({
-      groesse: 1.35,
+      groesse: 0.8,          // klein - sie sollen den See nicht zudecken
       sorte: sorten[Math.floor(wuerfel(0, sorten.length))],
       startzahl: Math.floor(wuerfel(1, 9999)),
     });
-    /* Ein bisschen versetzt, damit nicht alle aufeinander liegen -
-       aber nur so weit, dass sie sicher auf dem Wasser bleiben.   */
+
+    /* Die Seerose kommt genau dorthin, wo du hingetippt hast - nur
+       ein Hauch versetzt, damit nicht alle aufeinander liegen.
+       Dein Finger weiss am besten, wo das Wasser ist.             */
     const derSee = see || istAufDemSee(lokaleRichtung);
-    const seeWeite = derSee
-      ? (derSee.userData.flaecheRadius || 0.8) * (derSee.scale.x || 1)
-      : 0.8;
-    const streu = Math.min(0.09,
-      (seeWeite * 0.35) / Math.max(0.4, planet.radius));
-    const mitte = derSee ? derSee.userData.richtung.clone() : lokaleRichtung.clone();
-    const ort = mitte
-      .add(new THREE.Vector3(wuerfel(-streu, streu), wuerfel(-streu, streu),
-                             wuerfel(-streu, streu)))
+    const ort = lokaleRichtung.clone()
+      .add(new THREE.Vector3(wuerfel(-0.02, 0.02), wuerfel(-0.02, 0.02),
+                             wuerfel(-0.02, 0.02)))
       .normalize();
+
     rose.scale.setScalar(0.05);
-    // die Seerose schwimmt auf dem Wasser - also etwas tiefer als der Rand
-    // Die Seerose schwimmt auf dem Wasser - also genauso tief wie
-    // der See, auf dem sie liegt.
+
+    /* Eine Seerose liegt FLACH auf dem Wasser.
+       Der See ist flach, der Planet ist rund - am Rand des Sees
+       stand die Seerose darum schraeg und steckte halb im Wasser.
+       Jetzt richtet sie sich nach dem See aus (nicht nach der
+       Rundung der Kugel) und sinkt genau so tief ein, wie die
+       Rundung an dieser Stelle unter dem flachen See abfaellt.
+       Wonach sie sich richtet, weiss der See selbst ganz genau:
+       es ist die Richtung, in der er aufgestellt wurde.           */
+    const seeRichtung = derSee ? derSee.userData.richtung : null;
+    const wieWeitVomSee = seeRichtung
+      ? ort.angleTo(seeRichtung) * Math.max(0.4, planet.radius) : 0;
+
     planet.stelleAuf(rose, ort, {
       einsinken: 0,
       einsinkenAbsolut: SEE_TIEFE_VOLL,
+      flachBreite: wieWeitVomSee * 2,
+      ausrichtung: seeRichtung,
       drehung: wuerfel(0, 6.28),
     });
     lassWachsen(rose, 1, 1.2);
@@ -1292,16 +1306,37 @@ async function los() {
         mondBahn.winkel += weg * (1 - Math.pow(0.12, schritt));
       }
     } else {
-      blick.lunixWeite = 1;
-      mondBahn.zielWinkel = null;
       mondBahn.winkel += schritt * mondBahn.geschwindigkeit;
-      // nach dem Gespraech sanft wieder auf die alte Blickhoehe
-      if (blick.hochVorher !== null) {
-        blick.hoch += (blick.hochVorher - blick.hoch)
-                      * (1 - Math.pow(0.25, schritt));
-        if (Math.abs(blick.hochVorher - blick.hoch) < 0.004) {
-          blick.hochVorher = null;
-        }
+    }
+
+    /* ---------- AUFRAEUMEN NACH DEM GESPRAECH ----------
+       Wenn Lunix fertig ist, muss alles wieder genau so sein wie
+       vorher - sonst laesst sich der Planet hinterher nicht mehr
+       richtig drehen.                                             */
+    if (blick.schautZuLunix) {
+      blick.redeteGerade = true;
+    } else if (blick.redeteGerade) {
+      blick.redeteGerade = false;
+      blick.lunixWeite = 1;
+      blick.schwungSeite = 0;
+      blick.schwungHoch = 0;
+      mondBahn.zielWinkel = null;
+      lunixZeigtAuf(null);
+      // Beim Reden schaut die Kamera zu Lunix hinauf. Danach kommt
+      // sie in einen bequemen Bereich zurueck - nicht steil von oben
+      // und nicht von unten, sondern schoen auf die Welt.
+      blick.hochZurueck = THREE.MathUtils.clamp(
+        blick.hochVorher !== null ? blick.hochVorher : blick.hoch, -0.7, 0.7);
+      blick.hochVorher = null;
+    }
+
+    /* Zurueck zur bequemen Blickhoehe - aber nur, solange du nicht
+       selbst wischst. Deine Finger haben immer Vorrang.           */
+    if (blick.hochZurueck !== null) {
+      blick.hoch += (blick.hochZurueck - blick.hoch)
+                    * (1 - Math.pow(0.1, schritt));
+      if (Math.abs(blick.hochZurueck - blick.hoch) < 0.01) {
+        blick.hochZurueck = null;
       }
     }
     {
@@ -1353,7 +1388,9 @@ async function los() {
          und dem Planeten.                                          */
       const stelle = holeZeigeZiel();
       if (stelle) blickMitte.copy(stelle).lerp(mond.position, 0.5);
-      else blickMitte.copy(mond.position).multiplyScalar(0.5);
+      // ohne bestimmte Stelle schaut die Kamera fast direkt auf Lunix -
+      // der Planet ist ja gross genug, um trotzdem im Bild zu sein
+      else blickMitte.copy(mond.position).multiplyScalar(0.7);
 
       // Genau auf diese Mitte schaut die Kamera - damit steht sie in
       // der Bildmitte und Lunix kann gar nicht mehr aus dem Bild
@@ -1361,8 +1398,8 @@ async function los() {
       blick.zielZiel.copy(blickMitte);
       // nah genug, dass man erkennt, worum es geht - und weit genug,
       // dass Lunix wirklich zu sehen ist (siehe Sicherheitsnetz unten)
-      blick.zielAbstand = Math.max(planet.radius * 1.9 + 2.2,
-                                   mond.position.length() * 1.1)
+      blick.zielAbstand = Math.max(planet.radius * 2.1 + 2.6,
+                                   mond.position.length() * 1.7)
                           * blick.lunixWeite;
 
       // Die Kamera stellt sich SCHRAEG daneben - dann stehen Planet
@@ -1371,7 +1408,7 @@ async function los() {
       let unterschied = (seiteZiel - 0.42) - blick.seite;
       while (unterschied > Math.PI) unterschied -= Math.PI * 2;
       while (unterschied < -Math.PI) unterschied += Math.PI * 2;
-      blick.seite += unterschied * (1 - Math.pow(0.35, schritt));
+      blick.seite += unterschied * (1 - Math.pow(0.06, schritt));
 
       const laenge = blickMitte.length() || 1;
       const zielHoch = Math.asin(
@@ -1380,7 +1417,7 @@ async function los() {
       // So liegt Lunix waagerecht vor der Kamera - und über ihm ist
       // Platz für die Sprechblase, statt dass sie ihn verdeckt.
       blick.hoch += (THREE.MathUtils.clamp(zielHoch, -1.2, 1.2) - blick.hoch)
-                    * (1 - Math.pow(0.4, schritt));
+                    * (1 - Math.pow(0.06, schritt));
     } else {
       blick.zielZiel.set(0, 0, 0);
       const normal = zustand.schlaeft ? 4.6 : 2.15 + planet.radius * 2.6;
@@ -1402,8 +1439,12 @@ async function los() {
       blick.zielAbstand = Math.max(planet.radius * 1.6 + 0.7, normal * blick.zoom);
     }
     blick.ziel.lerp(blick.zielZiel, 1 - Math.pow(0.01, schritt));
-    blick.abstand = THREE.MathUtils.lerp(blick.abstand, blick.zielAbstand,
-                                         1 - Math.pow(0.06, schritt));
+    /* Wenn Lunix redet, fliegt die Kamera zuegig auf ihre Position -
+       sonst tippt man schon auf "weiter", waehrend sie noch unterwegs
+       ist, und sieht ihn nie.                                       */
+    blick.abstand = THREE.MathUtils.lerp(
+      blick.abstand, blick.zielAbstand,
+      1 - Math.pow(blick.schautZuLunix ? 0.002 : 0.06, schritt));
     stelleKameraEin();
 
     /* --- Die Sprechblase klebt an Lunix --- */
@@ -1418,7 +1459,9 @@ async function los() {
          kann er nie wieder "irgendwo" sein, wo man ihn nicht findet. */
       const wieWeitDraussen = Math.max(Math.abs(p.x), Math.abs(p.y));
       if (p.z > 1 || wieWeitDraussen > 0.62) {
-        blick.lunixWeite = Math.min(3, blick.lunixWeite * 1.05);
+        // schnell genug, dass es auch dann klappt, wenn man gleich
+        // wieder auf "weiter" tippt
+        blick.lunixWeite = Math.min(3, blick.lunixWeite * 1.12);
       } else if (wieWeitDraussen < 0.44 && blick.lunixWeite > 1) {
         blick.lunixWeite = Math.max(1, blick.lunixWeite * 0.985);
       }

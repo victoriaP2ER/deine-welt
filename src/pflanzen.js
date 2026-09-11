@@ -482,9 +482,9 @@ export function baueSeerose({ groesse = 1, sorte = 'weiss', startzahl = 1 } = {}
   rose.userData.antippbar = true;
   rose.userData.hoehe = 0.12 * groesse;
   rose.userData.belebe = (zeit) => {
-    // sie schaukelt auf dem Wasser
-    rose.rotation.z = Math.sin(zeit * 0.9 + startzahl) * 0.05;
-    rose.rotation.x = Math.cos(zeit * 0.7 + startzahl) * 0.04;
+    // sie schaukelt ganz sacht auf dem Wasser
+    rose.rotation.z = Math.sin(zeit * 0.9 + startzahl) * 0.02;
+    rose.rotation.x = Math.cos(zeit * 0.7 + startzahl) * 0.016;
     bluete.position.y = 0.03 + Math.sin(zeit * 1.4 + startzahl) * 0.006;
   };
   return rose;

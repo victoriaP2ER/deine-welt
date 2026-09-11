@@ -141,6 +141,9 @@ export function macheBedienung({ szene, blick, beiTipp, beiStreicheln, antippbar
     z.letzteY = z.startY = e.clientY;
     blick.schwungSeite = 0;
     blick.schwungHoch = 0;
+    // Wenn du selbst wischst, hoert die Kamera auf, von allein
+    // irgendwohin zurueckzufahren. Deine Finger haben Vorrang.
+    blick.hochZurueck = null;
     z.fliegtSelbst = false;
     z.ruhe = 0;
     try {

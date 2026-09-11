@@ -263,9 +263,15 @@ export function machePlanet() {
    */
   function stelleAuf(objekt, richtungRoh,
                      { einsinken = 0.02, einsinkenAbsolut = 0,
-                       flachBreite = 0, drehung = 0 } = {}) {
+                       flachBreite = 0, drehung = 0, ausrichtung = null } = {}) {
     const richtung = richtungRoh.clone().normalize();
     objekt.userData.richtung = richtung;
+    /* Normalerweise steht ein Ding senkrecht auf der Kugel. Manche
+       Sachen sollen sich aber nach etwas anderem richten - eine
+       Seerose zum Beispiel liegt flach auf dem See, nicht schraeg
+       auf der Rundung des Planeten.                                */
+    objekt.userData.ausrichtung = ausrichtung
+      ? ausrichtung.clone().normalize() : null;
     objekt.userData.einsinken = einsinken;
     // "einsinkenAbsolut" ist eine feste Tiefe in Weltmass - gut für
     // Sachen wie einen See, die immer gleich tief im Boden liegen
@@ -276,7 +282,12 @@ export function machePlanet() {
     sachen.add(objekt);
     aufgestellt.push(objekt);
     richteAus(objekt);
-    if (objekt.userData.antippbar) gibGrosseTrefferflaeche(objekt);
+    // Grosse flache Sachen wie ein See brauchen keinen Hilfsball -
+    // im Gegenteil: er wuerde die Beruehrung in seine Mitte ziehen,
+    // und die Seerosen landen dann nicht dort, wo man getippt hat.
+    if (objekt.userData.antippbar && !objekt.userData.keinTrefferBall) {
+      gibGrosseTrefferflaeche(objekt);
+    }
     return objekt;
   }
 
@@ -343,7 +354,7 @@ export function machePlanet() {
       - (objekt.userData.einsinkenAbsolut || 0)
       - flach;
     objekt.position.copy(r).multiplyScalar(boden);
-    objekt.quaternion.setFromUnitVectors(hoch, r);
+    objekt.quaternion.setFromUnitVectors(hoch, objekt.userData.ausrichtung || r);
     if (objekt.userData.eigenDrehung) {
       objekt.rotateY(objekt.userData.eigenDrehung);
     }

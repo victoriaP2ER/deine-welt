@@ -1098,13 +1098,15 @@ async function los() {
       if (planet.radius > blick.letzterRadius + 0.004) {
         const verhaeltnis = (2.15 + blick.letzterRadius * 2.6) / normal;
         blick.zoom = THREE.MathUtils.clamp(
-          blick.zoom + (1 - verhaeltnis) * 0.55, 0.4, 1.9);
+          blick.zoom + (1 - verhaeltnis) * 0.55, 0.58, 1.9);
       }
       blick.letzterRadius = planet.radius;
 
       // Der Zoom des Spielers - aber nie so nah, dass die Kamera
       // im Planeten steckt.
-      blick.zielAbstand = Math.max(planet.radius + 0.75, normal * blick.zoom);
+      // Nie so nah, dass man nur noch Boden sieht: die Kamera bleibt
+      // immer weit genug weg, dass man ein gutes Stück Planet im Bild hat.
+      blick.zielAbstand = Math.max(planet.radius * 1.6 + 0.7, normal * blick.zoom);
     }
     blick.ziel.lerp(blick.zielZiel, 1 - Math.pow(0.01, schritt));
     blick.abstand = THREE.MathUtils.lerp(blick.abstand, blick.zielAbstand,

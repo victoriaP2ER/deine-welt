@@ -35,7 +35,7 @@ export function macheBedienung({ szene, blick, beiTipp, beiStreicheln, antippbar
   /* ---------- ZOOM ----------
      Am Computer mit dem Mausrad, auf dem Handy mit zwei Fingern
      (auseinanderziehen = näher ran).                               */
-  const NAH = 0.4;      // so nah darf man ran
+  const NAH = 0.58;     // so nah darf man ran (sonst sieht man nichts mehr)
   const WEIT = 1.9;     // so weit darf man weg
   const finger = new Map();     // welche Finger liegen gerade auf?
   let kneifStart = null;        // Zustand beim Zwei-Finger-Zoom

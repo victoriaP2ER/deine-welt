@@ -11,7 +11,8 @@ import { szene, kamera, maler, belebeSterne, passeGroesseAn } from './szene.js';
 import { ladeAlleBilder, macheSchnipsel, machWuerfel } from './schnipsel.js';
 import { machePlanet, hoeheAn } from './planet.js';
 import { baueMond } from './mond.js';
-import { baueGras, baueBlume, baueBaum, baueBusch, bauePilz, baueSetzling, baueStein, FARBEN } from './pflanzen.js';
+import { baueGras, baueBlume, baueBaum, baueBusch, bauePilz, baueSetzling, baueStein,
+         baueSeerose, FARBEN } from './pflanzen.js';
 import { baueSchmetterling, baueHaeschen, baueWolke } from './tiere.js';
 import { baueGiesskanne, baueSamentuete, baueSchimmer } from './dinge.js';
 import * as ui from './ui.js';
@@ -135,6 +136,8 @@ async function los() {
     blumeGesund:  ['meine-sachen/blubber-blume.glb', 0.48],
     baumTrocken:  ['meine-sachen/apfelbaum-trocken.glb', 0.5],
     baumGesund:   ['meine-sachen/apfelbaum.glb', 1.2],
+    seeVoll:      ['meine-sachen/see-voll.glb', 0.55],
+    seeLeer:      ['meine-sachen/see-leer.glb', 0.5],
   };
 
   const eigene = {};            // name -> Fabrik, die Kopien macht
@@ -373,6 +376,13 @@ async function los() {
     klang.klangWachsen();
     ui.zeigeHinweis('Der Planet ist gewachsen! Jetzt ist wieder Platz.');
     setTimeout(() => ui.zeigeHinweis(''), 3500);
+
+    // Bei jedem zweiten Wachstumsschritt kommt ein neues Stueck
+    // Planet zum Vorschein - zum Beispiel ein See.
+    const wachstumsSchritt = zustand.guteTaten / 4;
+    if (wachstumsSchritt % 2 === 0) {
+      setTimeout(() => lassSeeErscheinen(), 2200);
+    }
     // ein paar Funken rundherum, damit man es merkt
     for (let i = 0; i < 8; i++) {
       setTimeout(() => ui.funkeAmBildschirm(
@@ -535,6 +545,11 @@ async function los() {
     const trockene = planet.aufgestellt.filter((o) =>
       o.userData.typ === 'gras-trocken' && o.userData.richtung.distanceTo(lokal) < 0.36);
     for (const alt of trockene) tauscheGrasAus(alt);
+    // ein leerer See fuellt sich mit Wasser
+    const leereSeen = planet.aufgestellt.filter((o) =>
+      o.userData.typ === 'see-leer' && o.userData.richtung.distanceTo(lokal) < 0.5);
+    for (const see of leereSeen) fuelleSee(see);
+
     // vertrocknete Apfelbaeume werden wieder gruen
     const welkeBaeume = planet.aufgestellt.filter((o) =>
       o.userData.typ === 'apfelbaum-trocken' && o.userData.richtung.distanceTo(lokal) < 0.45);
@@ -603,6 +618,70 @@ async function los() {
       planet.stelleAuf(blume, new THREE.Vector3(...ort).normalize(),
                        { einsinken: 0.004, drehung: i * 1.2 });
     });
+  }
+
+  /* ---------- SEEN ----------
+     Wenn der Planet waechst, kommt Platz fuer einen See zum
+     Vorschein. Die Datei ist gross, darum wird sie erst geholt,
+     wenn sie wirklich gebraucht wird.                              */
+  const SEE_ORTE = [
+    [0.62, 0.2, 0.75], [-0.55, -0.45, 0.7], [0.1, 0.75, -0.65],
+  ];
+  let seenAufgestellt = 0;
+
+  async function lassSeeErscheinen(mitFunken = true) {
+    if (seenAufgestellt >= SEE_ORTE.length) return null;
+    const nummer = seenAufgestellt;
+    seenAufgestellt++;
+
+    if (mitFunken) {
+      ui.zeigeHinweis('Da sammelt sich Wasser ...');
+    }
+    // erst den leeren See versuchen, sonst gleich den vollen
+    const fabrik = (await holeVorlage('seeLeer')) || (await holeVorlage('seeVoll'));
+    if (!fabrik) { seenAufgestellt--; ui.zeigeHinweis(''); return null; }
+    const leerVorhanden = !!eigene.seeLeer;
+
+    const see = fabrik();
+    see.userData.typ = leerVorhanden ? 'see-leer' : 'see';
+    see.userData.antippbar = true;
+    see.scale.setScalar(0.04);
+    const richtung = new THREE.Vector3(...SEE_ORTE[nummer]).normalize();
+    planet.stelleAuf(see, richtung, { einsinken: 0.05, drehung: nummer * 1.7 });
+    lassWachsen(see, 1, 1.8);
+    planet.maleGruen(richtung, 0.45, 0.8);
+    if (mitFunken) {
+      klang.klangWachsen();
+      funkeBei(see.getWorldPosition(new THREE.Vector3()), 10);
+      ui.zeigeHinweis('');
+    }
+    // die gefuellte Fassung schon mal vorbereiten
+    if (leerVorhanden) holeVorlage('seeVoll');
+    return see;
+  }
+
+  /* --- Aus einem leeren See wird ein voller --- */
+  function fuelleSee(leererSee) {
+    const fabrik = eigene.seeVoll;
+    if (!fabrik) {
+      holeVorlage('seeVoll').then((f) => { if (f) fuelleSee(leererSee); });
+      ui.zeigeHinweis('das Wasser kommt gleich ...');
+      setTimeout(() => ui.zeigeHinweis(''), 2000);
+      return null;
+    }
+    const richtung = leererSee.userData.richtung.clone();
+    const drehung = leererSee.userData.eigenDrehung || 0;
+    planet.nimmWeg(leererSee);
+    const voll = fabrik();
+    voll.userData.typ = 'see';
+    voll.userData.antippbar = true;
+    voll.scale.setScalar(0.3);
+    planet.stelleAuf(voll, richtung, { einsinken: 0.05, drehung });
+    lassWachsen(voll, 1, 1.6);
+    klang.klangGiessen();
+    klang.klangAufbluehen();
+    funkeBei(voll.getWorldPosition(new THREE.Vector3()), 12);
+    return voll;
   }
 
   /* --- Eine Stelle, die gerade NICHT zu sehen ist ---
@@ -700,8 +779,42 @@ async function los() {
     return blume;
   }
 
+  /* --- Seerosen wachsen nur auf dem Wasser --- */
+  function istAufDemSee(lokaleRichtung) {
+    return planet.aufgestellt.find((o) =>
+      o.userData.typ === 'see' && o.userData.richtung.distanceTo(lokaleRichtung) < 0.3);
+  }
+
+  function pflanzeSeerose(lokaleRichtung) {
+    const sorten = ['weiss', 'rosa', 'gelb'];
+    const rose = baueSeerose({
+      groesse: 1.35,
+      sorte: sorten[Math.floor(wuerfel(0, sorten.length))],
+      startzahl: Math.floor(wuerfel(1, 9999)),
+    });
+    // ein bisschen versetzt, damit sie nicht alle aufeinander liegen
+    const ort = lokaleRichtung.clone()
+      .add(new THREE.Vector3(wuerfel(-0.06, 0.06), wuerfel(-0.06, 0.06), wuerfel(-0.06, 0.06)))
+      .normalize();
+    rose.scale.setScalar(0.05);
+    planet.stelleAuf(rose, ort, { einsinken: 0.035, drehung: wuerfel(0, 6.28) });
+    lassWachsen(rose, 1, 1.2);
+    klang.klangPlopp();
+    klang.klangAufbluehen();
+    zustand.gepflanzt++;
+    funkeBei(rose.getWorldPosition(new THREE.Vector3()), 5);
+    guteTat();
+    return rose;
+  }
+
   function pflanzeBlumeAn(treffer) {
     const lokal = planet.gruppe.worldToLocal(treffer.punkt.clone()).normalize();
+
+    // Auf dem Wasser waechst keine normale Blume - da wird es eine Seerose
+    if (istAufDemSee(lokal)) {
+      pflanzeSeerose(lokal);
+      return;
+    }
     // jede dritte Blume ist eine selbst gemalte Blubber-Blume
     if (eigene.blumeGesund && zustand.gepflanzt % 3 === 2) {
       const b = pflanzeBlubberBlume(lokal);
@@ -777,6 +890,7 @@ async function los() {
         gegossen: zustand.gegossen,
         gepflanzt: zustand.gepflanzt,
         guteTaten: zustand.guteTaten || 0,
+        seen: seenAufgestellt,
       }));
     } catch (e) { /* macht nichts */ }
   }
@@ -784,6 +898,11 @@ async function los() {
     try {
       return JSON.parse(localStorage.getItem(SPEICHER) || 'null');
     } catch (e) { return null; }
+  }
+
+  /** Nach dem Neuladen: so viele Seen wieder hinstellen wie vorher */
+  async function stelleSeenWiederHer(anzahl) {
+    for (let i = 0; i < anzahl; i++) await lassSeeErscheinen(false);
   }
 
   /* ================================================================
@@ -798,6 +917,7 @@ async function los() {
     giesseAn, pflanzeBlumeAn, freiesSpiel,
     stelleTrockeneBlumenAuf, verwandleBlume, machGras, eigene,
     holeVorlage, stelleApfelbaeumeAuf, verwandleBaum, rueckseite,
+    lassSeeErscheinen, fuelleSee, pflanzeSeerose, istAufDemSee, stelleSeenWiederHer,
     bauer: { baueGras, baueBlume, baueBaum, baueBusch, bauePilz, baueSetzling, baueStein,
              baueSchmetterling, baueHaeschen, baueWolke, baueGiesskanne, baueSamentuete, baueSchimmer },
     setzeKapitel(n) { zustand.kapitel = n; speichere(); },

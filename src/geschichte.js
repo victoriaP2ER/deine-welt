@@ -554,6 +554,8 @@ const kapitel = [
       await s.mondSagt([
         'Du kannst weitermachen, so lange du magst.',
         'Giesse, pflanze Blumen, streichel das Haeschen. Er freut sich ueber jedes Mal.',
+        'Und je mehr du machst, desto groesser wird er. Dann kommen sogar Seen zum Vorschein!',
+        'Wenn du Samen aufs Wasser streust, wachsen dort Seerosen.',
         'Und wenn du reden willst: tipp mich einfach an.',
       ], 'gluecklich');
 
@@ -586,6 +588,7 @@ export async function erzaehleGeschichte(spiel, gespeichert) {
     spiel.zustand.gegossen = gespeichert.gegossen || 0;
     spiel.zustand.gepflanzt = gespeichert.gepflanzt || 0;
     spiel.zustand.guteTaten = gespeichert.guteTaten || 0;
+    if (gespeichert.seen) spiel.stelleSeenWiederHer(gespeichert.seen);
     // Wenn der Planet durch viele gute Taten schon groesser war,
     // soll er auch wieder so gross sein.
     if (gespeichert.radius && gespeichert.radius > spiel.planet.zielRadius) {

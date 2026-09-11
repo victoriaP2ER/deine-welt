@@ -424,3 +424,68 @@ export function baueStein({ groesse = 1, startzahl = 1 } = {}) {
   stein.userData.hoehe = 0.14 * groesse;
   return stein;
 }
+
+/* ==================================================================
+   SEEROSE - waechst nur auf dem Wasser
+   ================================================================== */
+export function baueSeerose({ groesse = 1, sorte = 'weiss', startzahl = 1 } = {}) {
+  const w = machWuerfel(startzahl * 7919 + 101);
+  const rose = new THREE.Group();
+  const blattFarben = FARBEN.blueten[sorte] || FARBEN.blueten.weiss;
+
+  /* --- die flachen runden Blaetter, die auf dem Wasser liegen --- */
+  const blaetter = new THREE.Group();
+  for (let i = 0; i < 3; i++) {
+    const b = macheSchnipsel({
+      bild: 'klecks',
+      farbe: tone(['#4f9e46', '#5fae50', '#68b95a'][i], w(-0.04, 0.04)),
+      hoehe: (0.2 - i * 0.03) * groesse,
+      woelbung: 0.02,
+    });
+    const winkel = (i / 3) * Math.PI * 2 + w(-0.3, 0.3);
+    b.position.set(Math.cos(winkel) * 0.07 * groesse, 0.004 * i, Math.sin(winkel) * 0.07 * groesse);
+    b.rotation.x = -Math.PI / 2;
+    b.rotation.z = w(0, Math.PI * 2);
+    blaetter.add(b);
+  }
+  rose.add(blaetter);
+  backeZusammen(blaetter);
+
+  /* --- die Bluete in der Mitte --- */
+  const bluete = new THREE.Group();
+  bluete.position.y = 0.03 * groesse;
+  const anzahl = 6;
+  for (let ring = 0; ring < 2; ring++) {
+    for (let i = 0; i < anzahl; i++) {
+      const blatt = macheSchnipsel({
+        bild: 'blueten-blatt',
+        farbe: tone(wahl(blattFarben, w), ring * 0.06),
+        hoehe: (0.1 - ring * 0.025) * groesse,
+        woelbung: 0.03,
+      });
+      const winkel = (i / anzahl) * Math.PI * 2 + ring * 0.5;
+      const weg = (0.035 - ring * 0.012) * groesse;
+      blatt.position.set(Math.cos(winkel) * weg, ring * 0.012 * groesse, Math.sin(winkel) * weg);
+      // die aeusseren liegen flacher, die inneren stehen auf
+      blatt.rotation.set(-1.35 + ring * 0.35, -winkel + Math.PI / 2, 0);
+      bluete.add(blatt);
+    }
+  }
+  const mitte = macheSchnipsel({ bild: 'klecks', farbe: '#ffd75e', hoehe: 0.04 * groesse, woelbung: 0.015 });
+  mitte.rotation.x = -Math.PI / 2;
+  mitte.position.y = 0.022 * groesse;
+  bluete.add(mitte);
+  rose.add(bluete);
+  backeZusammen(bluete);
+
+  rose.userData.typ = 'seerose';
+  rose.userData.antippbar = true;
+  rose.userData.hoehe = 0.12 * groesse;
+  rose.userData.belebe = (zeit) => {
+    // sie schaukelt auf dem Wasser
+    rose.rotation.z = Math.sin(zeit * 0.9 + startzahl) * 0.05;
+    rose.rotation.x = Math.cos(zeit * 0.7 + startzahl) * 0.04;
+    bluete.position.y = 0.03 + Math.sin(zeit * 1.4 + startzahl) * 0.006;
+  };
+  return rose;
+}

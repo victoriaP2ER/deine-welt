@@ -60,6 +60,16 @@ function machePassend(modell, zielHoehe = 0.55) {
       if (hatEckenFarben) m.vertexColors = true;
       if ('metalness' in m) m.metalness = 0;
       if ('roughness' in m) m.roughness = Math.max(0.75, m.roughness || 0);
+
+      /* Durchsichtige Pinsel (Wasser, Blasen, Nebel) brauchen eine
+         Sonderbehandlung: sie duerfen sich nicht gegenseitig
+         wegschneiden. Darum schreiben sie keine Tiefe mehr - dann
+         scheint das Wasser richtig durch.                          */
+      if (m.transparent) {
+        m.depthWrite = false;
+        m.side = THREE.DoubleSide;
+        if (m.opacity < 0.15) m.opacity = 0.4;   // ganz unsichtbar waere schade
+      }
       // schwarze Grundfarbe wuerde die Eckenfarben ausloeschen
       if (hatEckenFarben && m.color) {
         const helligkeit = m.color.r + m.color.g + m.color.b;

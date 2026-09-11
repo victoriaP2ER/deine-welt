@@ -24,7 +24,7 @@ import { holeEigeneSachen, ladeVorlage } from './eigene-sachen.js';
 /* ---------- welche Bilder brauchen wir? ---------- */
 const BILDER = [
   'blatt-1', 'blatt-2', 'blatt-3', 'blatt-klein', 'halm', 'halm-breit',
-  'blüten-blatt', 'klecks', 'streifen', 'auge', 'pupille', 'braue',
+  'blueten-blatt', 'klecks', 'streifen', 'auge', 'pupille', 'braue',
   'mund-laecheln', 'mund-o', 'mund-traurig', 'wange', 'fluegel-oben',
   'fluegel-unten', 'ohr', 'tropfen', 'funke', 'glanz', 'krater',
 ];
@@ -77,6 +77,7 @@ async function los() {
     neigung: 0.5,
     geschwindigkeit: 0.15,
     erzaehlNaehe: 0,     // 0 = normale Bahn, 1 = kommt zum Erzählen näher
+    zielWinkel: null,    // beim Reden: da bleibt er stehen
   };
 
   /* ---------- DER BLICK: wo ist die Kamera, wohin schaut sie? ----------
@@ -97,6 +98,7 @@ async function los() {
     ziel: new THREE.Vector3(0, 0, 0),        // wohin die Kamera schaut
     zielZiel: new THREE.Vector3(0, 0, 0),    // wohin sie schauen soll
     schautZuLunix: false,
+    hochVorher: null,   // Blickhöhe vor dem Gespräch, um zurückzufinden
   };
 
   /** Setzt die Kamera aus den Winkeln zusammen. */
@@ -133,13 +135,18 @@ async function los() {
   // man beim Gießen richtig, wie es aufwächst.
   const DATEIEN = {
     grasTrocken:  ['meine-sachen/gras-trocken.glb', 0.13],
-    grasGesund:   ['meine-sachen/gras-gesund.glb', 0.27],
+    // Dein gesundes Gras ist aus dem vertrockneten entstanden und
+    // darum noch fast ueberall ockerbraun. Damit man wirklich sieht,
+    // dass es aufgelebt ist, bekommen die braunen Striche genau das
+    // Gruen, das du in derselben Zeichnung schon benutzt hast.
+    grasGesund:   ['meine-sachen/gras-gesund.glb', 0.27, { nachfaerben: '#2f7a28' }],
     blumeTrocken: ['meine-sachen/blubber-blume-trocken.glb', 0.2],
     blumeGesund:  ['meine-sachen/blubber-blume.glb', 0.48],
     baumTrocken:  ['meine-sachen/apfelbaum-trocken.glb', 0.5],
     baumGesund:   ['meine-sachen/apfelbaum.glb', 1.2],
     seeVoll:      ['meine-sachen/see-voll.glb', 0.72],
     seeLeer:      ['meine-sachen/see-leer.glb', 0.72],
+    haeschenHoehle: ['meine-sachen/haeschen-hoehle.glb', 0.42],
   };
 
   const eigene = {};            // name -> Fabrik, die Kopien macht
@@ -152,10 +159,10 @@ async function los() {
   function holeVorlage(name) {
     if (eigene[name]) return Promise.resolve(eigene[name]);
     if (amLaden[name]) return amLaden[name];
-    const [datei, hoehe] = DATEIEN[name] || [];
+    const [datei, hoehe, wahl] = DATEIEN[name] || [];
     if (!datei) return Promise.resolve(null);
 
-    amLaden[name] = ladeVorlage(datei, hoehe)
+    amLaden[name] = ladeVorlage(datei, hoehe, wahl)
       .then((fabrik) => {
         eigene[name] = fabrik;
         console.log('deine Zeichnung ist da:', name);
@@ -516,7 +523,7 @@ async function los() {
 
     // ein passendes Zeichen dazu
     const zeichen = {
-      wolke: '💧', haeschen: '💚', schmetterling: '✨',
+      wolke: '💧', haeschen: '💚', schmetterling: '✨', hoehle: '🐾',
       'blubber-blume': '🌸', 'blubber-trocken': '🥀',
       apfelbaum: '🍎', 'apfelbaum-trocken': '🍂',
       blume: '🌸', pilz: '🍄', stein: '·',
@@ -542,23 +549,33 @@ async function los() {
     zustand.gegossen++;
     guteTat();
 
+    /* Was genau habe ich getroffen?
+       Tippt man ein vertrocknetes Ding direkt an, soll es auch dann
+       gegossen werden, wenn der Finger etwas daneben gerutscht ist. */
+    const getroffen = treffer.ding.userData.typ ? treffer.ding : null;
+    const dasHier = (typ, o) => o.userData.typ === typ && o === getroffen;
+
     // trockenes Gras an dieser Stelle wird gesund
     const trockene = planet.aufgestellt.filter((o) =>
-      o.userData.typ === 'gras-trocken' && o.userData.richtung.distanceTo(lokal) < 0.36);
+      o.userData.typ === 'gras-trocken'
+      && (dasHier('gras-trocken', o) || o.userData.richtung.distanceTo(lokal) < 0.36));
     for (const alt of trockene) tauscheGrasAus(alt);
     // ein leerer See füllt sich mit Wasser
     const leereSeen = planet.aufgestellt.filter((o) =>
-      o.userData.typ === 'see-leer' && o.userData.richtung.distanceTo(lokal) < 0.5);
+      o.userData.typ === 'see-leer'
+      && (dasHier('see-leer', o) || o.userData.richtung.distanceTo(lokal) < 0.5));
     for (const see of leereSeen) fuelleSee(see);
 
     // vertrocknete Apfelbäume werden wieder grün
     const welkeBaeume = planet.aufgestellt.filter((o) =>
-      o.userData.typ === 'apfelbaum-trocken' && o.userData.richtung.distanceTo(lokal) < 0.45);
+      o.userData.typ === 'apfelbaum-trocken'
+      && (dasHier('apfelbaum-trocken', o) || o.userData.richtung.distanceTo(lokal) < 0.45));
     for (const b of welkeBaeume) verwandleBaum(b);
 
     // vertrocknete Blubber-Blumen blühen wieder auf
     const welke = planet.aufgestellt.filter((o) =>
-      o.userData.typ === 'blubber-trocken' && o.userData.richtung.distanceTo(lokal) < 0.4);
+      o.userData.typ === 'blubber-trocken'
+      && (dasHier('blubber-trocken', o) || o.userData.richtung.distanceTo(lokal) < 0.4));
     for (const w of welke) verwandleBlume(w);
 
     // und aus dem gewaesserten Boden blubbert eine neue Blume hervor
@@ -630,14 +647,28 @@ async function los() {
   ];
   let seenAufgestellt = 0;
 
-  /* Ein See liegt IM Boden, nicht darauf. Diese Funktion rechnet aus,
-     wie tief er versenkt werden muss, damit nur der Rand herausschaut. */
   /* Wie tief ein See im Boden steckt.
+
+     Ganz wenig! Frueher steckte er so tief, dass man vom Wasser
+     nichts mehr gesehen hat. Jetzt wird nur die Stelle unter ihm
+     glattgebuegelt, und der See legt sich einfach darauf.
+
      Fest eingestellt, nicht gemessen - denn der leere und der volle
      See sind unterschiedlich gross gemalt. Wuerde man messen, wuerde
      der See beim Auffuellen auf einmal tiefer oder hoeher sitzen.  */
-  const SEE_TIEFE = 0.12;      // ein bisschen zusaetzlich, damit das
-                               // Ufer wirklich im Boden steckt
+  const SEE_TIEFE = 0;           // leerer See: er liegt einfach oben auf
+  const SEE_TIEFE_VOLL = -0.01;  // voller See: das Wasser soll man sehen
+  /* Wie stark die Rundung des Planeten ausgeglichen wird.
+     1 = der Rand beruehrt genau den Boden (dann steckt der See zu
+     tief drin), weniger = der See liegt hoeher und man sieht ihn
+     richtig. Auf einem grossen Planeten ist das ohnehin nur ein
+     kleiner Unterschied - genau wie bei einem See auf der Erde. */
+  const SEE_RUNDUNG = 0.76;
+  /* Ein See waechst nicht wie eine Pflanze - er FUELLT sich.
+     Darum legt sich der volle See genau so gross ueber den leeren
+     und schwillt dabei nur einen Hauch an, waehrend der leere
+     darunter verblasst. */
+  const SEE_ANSCHWELLEN = 1.05;
 
   /** Wie breit ein Ding ist - dafuer, dass es passend versenkt wird. */
   function breiteVon(objekt) {
@@ -697,6 +728,9 @@ async function los() {
     planet.stelleAuf(see, richtung, {
       einsinken: 0,
       einsinkenAbsolut: SEE_TIEFE,
+      // So tief, dass der Rand den Boden beruehrt - auf einem grossen
+      // Planeten ist das fast nichts, weil die Rundung so sanft ist.
+      flachBreite: breiteVon(see) * SEE_RUNDUNG,
       drehung: nummer * 1.7,
     });
     lassWachsen(see, 1, 2);
@@ -727,18 +761,35 @@ async function los() {
     }
     const richtung = leererSee.userData.richtung.clone();
     const drehung = leererSee.userData.eigenDrehung || 0;
-    planet.nimmWeg(leererSee);
     const voll = fabrik();
     voll.userData.typ = 'see';
     voll.userData.antippbar = true;
     machRuhig(voll);
-    voll.scale.setScalar(0.85);          // er ist ja schon da, er füllt sich nur
+
+    /* Der volle See ist anders gemalt als der leere. Damit beim
+       Auffuellen nichts springt, wird er genau so gross gemacht, dass
+       er dieselbe Flaeche bedeckt wie der leere See.                */
+    const a = leererSee.userData.masse;
+    const b = voll.userData.masse;
+    const angleich = (a && b && b.x && b.z)
+      ? Math.sqrt((a.x * a.z) / (b.x * b.z))
+      : 1;
+
+    voll.scale.setScalar(angleich);
     planet.stelleAuf(voll, richtung, {
       einsinken: 0,
-      einsinkenAbsolut: SEE_TIEFE,
+      einsinkenAbsolut: SEE_TIEFE_VOLL,   // das Wasser liegt obenauf
+      flachBreite: breiteVon(voll) * angleich * SEE_RUNDUNG,
       drehung,
     });
-    lassWachsen(voll, 1, 1.6);
+    // kein Wachsen wie bei einer Pflanze - nur ein Anschwellen
+    lassWachsen(voll, angleich * SEE_ANSCHWELLEN, 1.4, angleich);
+
+    // und der leere See verblasst sanft darunter weg
+    leererSee.userData.typ = 'vergeht';
+    leererSee.userData.antippbar = false;
+    lassVerblassen(leererSee, 1.4);
+
     klang.klangGiessen();
     klang.klangAufbluehen();
     funkeBei(voll.getWorldPosition(new THREE.Vector3()), 12);
@@ -764,6 +815,26 @@ async function los() {
     weg.y += wuerfel(-0.15, 0.45);
     weg.z += wuerfel(-0.35, 0.35);
     return planet.gruppe.worldToLocal(weg).normalize();
+  }
+
+  /* --- Die Höhle vom Häschen ---
+     Du hast dem Häschen eine kleine Höhle gemalt. Sie kommt genau an
+     die Stelle, an der sich das Häschen versteckt: dann hat es ein
+     Zuhause - und man hat beim Suchen etwas zu entdecken.          */
+  async function stelleHoehleAuf(richtung) {
+    const fabrik = await holeVorlage('haeschenHoehle');
+    if (!fabrik) return null;
+    const hoehle = fabrik();
+    hoehle.userData.typ = 'hoehle';
+    hoehle.userData.antippbar = true;
+    hoehle.userData.belebe = null;        // eine Höhle wackelt nicht
+    hoehle.scale.setScalar(0.05);
+    planet.stelleAuf(hoehle, richtung, {
+      einsinken: 0.06,
+      drehung: wuerfel(0, 6.28),
+    });
+    lassWachsen(hoehle, 1, 1.4);
+    return hoehle;
   }
 
   /* --- Die vertrockneten Apfelbäume kommen zum Vorschein --- */
@@ -857,7 +928,7 @@ async function los() {
   }
 
   function pflanzeSeerose(lokaleRichtung) {
-    const sorten = ['weiß', 'rosa', 'gelb'];
+    const sorten = ['weiss', 'rosa', 'gelb'];
     const rose = baueSeerose({
       groesse: 1.35,
       sorte: sorten[Math.floor(wuerfel(0, sorten.length))],
@@ -873,7 +944,7 @@ async function los() {
     // der See, auf dem sie liegt.
     planet.stelleAuf(rose, ort, {
       einsinken: 0,
-      einsinkenAbsolut: SEE_TIEFE * 0.5,
+      einsinkenAbsolut: SEE_TIEFE_VOLL,
       drehung: wuerfel(0, 6.28),
     });
     lassWachsen(rose, 1, 1.2);
@@ -922,8 +993,30 @@ async function los() {
 
   /* --- etwas wächst aus dem Boden --- */
   const wachsende = [];
-  function lassWachsen(objekt, zielGroesse = 1, dauer = 1) {
-    wachsende.push({ objekt, ziel: zielGroesse, zeit: 0, dauer });
+  function lassWachsen(objekt, zielGroesse = 1, dauer = 1, vonGroesse = 0) {
+    wachsende.push({ objekt, ziel: zielGroesse, von: vonGroesse, zeit: 0, dauer });
+  }
+
+  /* --- Sanft verschwinden ---
+     Der leere See wird nicht einfach weggenommen: er wird langsam
+     durchsichtig, waehrend sich der volle darueberlegt. Dann sieht es
+     aus, als wuerde sich der See wirklich mit Wasser fuellen.      */
+  const verblassende = [];
+  function lassVerblassen(objekt, dauer = 1.2) {
+    // eigene Materialien - sonst verblassen alle anderen Seen mit
+    objekt.traverse((teil) => {
+      if (!teil.isMesh || !teil.material) return;
+      teil.material = Array.isArray(teil.material)
+        ? teil.material.map((m) => m.clone())
+        : teil.material.clone();
+      const liste = Array.isArray(teil.material) ? teil.material : [teil.material];
+      for (const m of liste) {
+        m.transparent = true;
+        m.depthWrite = false;
+      }
+    });
+    objekt.renderOrder = -1;             // liegt unter dem Wasser
+    verblassende.push({ objekt, zeit: 0, dauer });
   }
 
   /* --- Regentropfen beim Gießen --- */
@@ -996,6 +1089,7 @@ async function los() {
     stelleTrockeneBlumenAuf, verwandleBlume, machGras, eigene,
     holeVorlage, stelleApfelbaeumeAuf, verwandleBaum, rueckseite,
     lassSeeErscheinen, fuelleSee, pflanzeSeerose, istAufDemSee, stelleSeenWiederHer,
+    stelleHoehleAuf,
     bauer: { baueGras, baueBlume, baueBaum, baueBusch, bauePilz, baueSetzling, baueStein,
              baueSchmetterling, baueHaeschen, baueWolke, baueGiesskanne, baueSamentuete, baueSchimmer },
     setzeKapitel(n) { zustand.kapitel = n; speichere(); },
@@ -1032,7 +1126,16 @@ async function los() {
     const zeit = zustand.zeit += schritt;
 
     belebeSterne(zeit);
-    blick.griffRadius = Math.max(0.35, planet.radius);
+    /* Wie "gross" sich der Planet beim Schieben anfuehlt.
+       Eigentlich ist das genau sein Radius - dann wandert die Stelle
+       unter dem Finger exakt mit. Auf einem sehr grossen Planeten
+       muesste man dafuer aber ewig wischen, um einmal herumzukommen.
+       Darum waechst der Griff ab einer Weile nur noch mit der Wurzel:
+       es fuehlt sich weiter richtig an, bleibt aber leicht zu drehen. */
+    const GEMUETLICH = 1.6;
+    blick.griffRadius = planet.radius <= GEMUETLICH
+      ? Math.max(0.35, planet.radius)
+      : GEMUETLICH * Math.sqrt(planet.radius / GEMUETLICH);
     bedienung.belebe(schritt);
     planet.belebe(zeit, schritt, kamera.position);
 
@@ -1048,13 +1151,38 @@ async function los() {
     /* --- Lunix zieht seine Bahn um den Planeten ---
        Beim Erzählen kommt er ein Stück näher und höher, damit er
        nicht hinter dem Planeten verschwindet.                      */
-    mondBahn.winkel += schritt * mondBahn.geschwindigkeit;
+    /* Zum Reden bleibt Lunix stehen - und zwar da, wo du gerade
+       hinschaust. Sonst muesste die Kamera hinter ihm herjagen und
+       die ganze Welt wuerde dabei wild herumwirbeln.               */
+    if (blick.schautZuLunix) {
+      if (mondBahn.zielWinkel === null) {
+        mondBahn.zielWinkel = Math.PI / 2 - (blick.seite + 0.42);
+        blick.hochVorher = blick.hoch;
+      }
+      let weg = mondBahn.zielWinkel - mondBahn.winkel;
+      while (weg > Math.PI) weg -= Math.PI * 2;
+      while (weg < -Math.PI) weg += Math.PI * 2;
+      mondBahn.winkel += weg * (1 - Math.pow(0.12, schritt));
+    } else {
+      mondBahn.zielWinkel = null;
+      mondBahn.winkel += schritt * mondBahn.geschwindigkeit;
+      // nach dem Gespraech sanft wieder auf die alte Blickhoehe
+      if (blick.hochVorher !== null) {
+        blick.hoch += (blick.hochVorher - blick.hoch)
+                      * (1 - Math.pow(0.25, schritt));
+        if (Math.abs(blick.hochVorher - blick.hoch) < 0.004) {
+          blick.hochVorher = null;
+        }
+      }
+    }
     {
       mondBahn.erzaehlNaehe = THREE.MathUtils.lerp(
         mondBahn.erzaehlNaehe, blick.schautZuLunix ? 1 : 0,
         1 - Math.pow(0.05, schritt));
 
-      const r = Math.max(2.4, planet.radius * 2.0 + 1.9)
+      // Etwas weiter draussen, damit Lunix und der Planet sich
+      // nicht ineinander schieben, wenn die Welt gross wird.
+      const r = Math.max(2.6, planet.radius * 2.1 + 2.1)
                 * (1 + mondBahn.erzaehlNaehe * 0.22);
       mond.position.set(
         Math.cos(mondBahn.winkel) * r,
@@ -1145,12 +1273,34 @@ async function los() {
       const w = wachsende[i];
       w.zeit += schritt;
       const t = Math.min(1, w.zeit / w.dauer);
-      // erst schnell, dann federt es kurz nach
-      const federn = 1 + Math.sin(t * Math.PI * 1.2) * 0.16 * (1 - t);
-      w.objekt.scale.setScalar(w.ziel * t * federn);
+      if (w.von) {
+        // von einer Groesse zur anderen - ruhig, ohne Federn
+        const weich = t * t * (3 - 2 * t);
+        w.objekt.scale.setScalar(w.von + (w.ziel - w.von) * weich);
+      } else {
+        // erst schnell, dann federt es kurz nach
+        const federn = 1 + Math.sin(t * Math.PI * 1.2) * 0.16 * (1 - t);
+        w.objekt.scale.setScalar(w.ziel * t * federn);
+      }
       if (t >= 1) {
         w.objekt.scale.setScalar(w.ziel);
         wachsende.splice(i, 1);
+      }
+    }
+
+    /* --- Sachen, die gerade verblassen --- */
+    for (let i = verblassende.length - 1; i >= 0; i--) {
+      const v = verblassende[i];
+      v.zeit += schritt;
+      const t = Math.min(1, v.zeit / v.dauer);
+      v.objekt.traverse((teil) => {
+        if (!teil.isMesh || !teil.material) return;
+        const liste = Array.isArray(teil.material) ? teil.material : [teil.material];
+        for (const m of liste) m.opacity = 1 - t;
+      });
+      if (t >= 1) {
+        planet.nimmWeg(v.objekt);
+        verblassende.splice(i, 1);
       }
     }
 

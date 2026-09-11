@@ -98,7 +98,7 @@ export function baueSamentuete({ groesse = 1 } = {}) {
   const bild = new THREE.Group();
   bild.position.set(0, 0.1 * groesse, 0.048 * groesse);
   for (let i = 0; i < 5; i++) {
-    const b = macheSchnipsel({ bild: 'blüten-blatt', farbe: '#fff3b0', hoehe: 0.05 * groesse, woelbung: 0.01 });
+    const b = macheSchnipsel({ bild: 'blueten-blatt', farbe: '#fff3b0', hoehe: 0.05 * groesse, woelbung: 0.01 });
     const winkel = (i / 5) * Math.PI * 2;
     b.position.set(Math.cos(winkel) * 0.022 * groesse, Math.sin(winkel) * 0.022 * groesse, 0);
     b.rotation.z = -winkel + Math.PI / 2;

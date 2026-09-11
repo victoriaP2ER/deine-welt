@@ -458,9 +458,41 @@ function macheZiehenUndFallen(spiel) {
    das ist viel schneller, als sie jedes Mal neu zu laden.
    ================================================================== */
 
-export async function ladeVorlage(pfad, hoehe = 0.5) {
+/**
+ * Faerbt die braunen Stellen einer Zeichnung nach.
+ *
+ * Warum? Das gesunde Grasbueschel ist in Open Brush aus dem
+ * vertrockneten entstanden - die meisten Striche sind darum noch
+ * genauso ockerbraun. Auf dem Planeten sah das gesunde Gras deshalb
+ * aus wie vertrocknetes, das sich nicht giessen laesst.
+ *
+ * Umgefaerbt wird nur, was braun ist (rot mehr als gruen). Das Gruen,
+ * das du selbst gemalt hast, bleibt genau so, wie es ist.
+ */
+function faerbeBraunNach(modell, zielFarbe, staerke = 0.8) {
+  const ziel = new THREE.Color(zielFarbe);
+  const schonGemacht = new Set();
+  modell.traverse((teil) => {
+    const farben = teil.isMesh && teil.geometry && teil.geometry.attributes.color;
+    if (!farben || schonGemacht.has(farben)) return;
+    schonGemacht.add(farben);
+    for (let i = 0; i < farben.count; i++) {
+      const r = farben.getX(i);
+      const g = farben.getY(i);
+      const b = farben.getZ(i);
+      if (g > r) continue;                    // schon gruen - so lassen
+      farben.setX(i, r + (ziel.r - r) * staerke);
+      farben.setY(i, g + (ziel.g - g) * staerke);
+      farben.setZ(i, b + (ziel.b - b) * staerke);
+    }
+    farben.needsUpdate = true;
+  });
+}
+
+export async function ladeVorlage(pfad, hoehe = 0.5, { nachfaerben } = {}) {
   const roh = await ladeGlb(pfad);
   const vorlage = machePassend(roh, hoehe);
+  if (nachfaerben) faerbeBraunNach(vorlage, nachfaerben);
   vorlage.updateMatrixWorld(true);
 
   return function macheKopie() {

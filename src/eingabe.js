@@ -243,8 +243,10 @@ export function macheBedienung({ szene, blick, beiTipp, beiStreicheln, antippbar
     //  nicht mehr zum Finger.)
     if (Math.abs(blick.schwungSeite) > 0.05 || Math.abs(blick.schwungHoch) > 0.05) {
       fliege(blick.schwungSeite * 0.22, blick.schwungHoch * 0.22);
-      blick.schwungSeite *= 0.86;
-      blick.schwungHoch *= 0.86;
+      // Der Schwung traegt lange - so kommt man mit einem Wisch
+      // auch auf einem grossen Planeten weit herum.
+      blick.schwungSeite *= 0.91;
+      blick.schwungHoch *= 0.91;
     } else {
       z.ruhe += schritt;
       if (z.ruhe > 3.5) z.fliegtSelbst = true;

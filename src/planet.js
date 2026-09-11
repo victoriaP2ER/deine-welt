@@ -13,44 +13,25 @@
 import * as THREE from 'three';
 import { machGemaltesBild, machWuerfel } from './schnipsel.js';
 
-/* ---------- FLACHE STELLEN ----------
-   Ein See ist flach, der Planet ist rund. Legt man den See einfach
-   obendrauf, stehen seine Ränder in der Luft.
+/* ---------- GLATTE STELLEN ----------
+   Ein See ist flach wie ein Teller, der Planet ist hügelig. Liegt der
+   See auf einem Hügel, schaut eine Ecke heraus und die andere steckt
+   im Boden.
 
-   Darum bekommt der Planet an dieser Stelle eine ebene Fläche - so
-   wie ein kleiner Tisch, auf den der See genau passt. Die Kanten
-   gehen weich in die Rundung über, damit der Planet nicht
-   unförmig wird.
+   Darum werden die Hügel an dieser Stelle weggebügelt: der Boden wird
+   dort so glatt wie die Kugel selbst. Das Wichtige daran - es wird nur
+   etwas WEGGENOMMEN, nie etwas dazugetan. Dadurch kann der Planet
+   davon niemals unförmig werden.
+
+   Und je größer der Planet wird, desto weniger merkt man von seiner
+   Rundung - genau wie bei der Erde. Ein See auf einem großen Planeten
+   fügt sich also ganz von allein ein.
    ------------------------------------------------------------------ */
-const flacheStellen = [];
+const glatteStellen = [];
 
-/**
- * Wie weit muss der Boden an dieser Stelle angehoben oder abgesenkt
- * werden, damit dort eine ebene Fläche entsteht?
- * (Zurückgegeben wird der Unterschied zum runden Planeten.)
- */
-export function ebeneAn(richtung) {
-  let aenderung = 0;
-  for (const f of flacheStellen) {
-    const abstand = richtung.distanceTo(f.richtung);
-    if (abstand >= f.weite) continue;
-
-    // Wie eine Tischplatte, die die Kugel berührt: je weiter weg von
-    // der Mitte, desto höher liegt die Platte über der Rundung.
-    const neigung = Math.max(0.4, richtung.dot(f.richtung));
-    const platte = f.hoehe / neigung - 1;
-
-    // weicher Übergang zum runden Rest
-    const t = 1 - abstand / f.weite;
-    const weich = t * t * (3 - 2 * t);
-    aenderung += platte * weich;
-  }
-  return aenderung;
-}
-
-/* ---------- Wie hügelig ist der Planet an dieser Stelle? ---------- */
-// Immer die gleiche Formel -> der Planet sieht jedes Mal gleich aus.
-export function hoeheAn(richtung) {
+/* Die Hügel des Planeten.
+   Immer die gleiche Formel -> der Planet sieht jedes Mal gleich aus. */
+function huegelAn(richtung) {
   const { x, y, z } = richtung;
   let h = 0;
   h += Math.sin(x * 3.1 + 1.7) * Math.cos(y * 2.7 - 0.4) * 0.030;
@@ -58,6 +39,26 @@ export function hoeheAn(richtung) {
   h += Math.sin(z * 6.1 + 0.6) * Math.cos(x * 5.3 + 2.4) * 0.013;
   h += Math.sin((x + y + z) * 8.5) * 0.006;
   return h;
+}
+
+/** Wie hoch liegt der Boden hier - mit den glattgebügelten Stellen. */
+export function hoeheAn(richtung) {
+  let h = huegelAn(richtung);
+  for (const s of glatteStellen) {
+    const abstand = richtung.distanceTo(s.richtung);
+    if (abstand >= s.weite) continue;
+    const t = 1 - abstand / s.weite;
+    const weich = t * t * (3 - 2 * t);        // weicher Übergang zum Rest
+    // zur Höhe in der Mitte hin angleichen - nie darüber hinaus
+    h = h * (1 - weich) + s.hoehe * weich;
+  }
+  return h;
+}
+
+/** Diese Stelle wird glattgebügelt (für flache Sachen wie einen See). */
+function buegleGlatt(richtung, weite) {
+  const r = richtung.clone().normalize();
+  glatteStellen.push({ richtung: r, weite, hoehe: huegelAn(r) });
 }
 
 const TROCKEN = new THREE.Color('#a8845a');
@@ -93,7 +94,7 @@ export function machePlanet() {
   function formeKugelNeu() {
     for (let i = 0; i < anzahl; i++) {
       const r = richtungen[i];
-      const hoehe = 1 + hoeheAn(r) + ebeneAn(r);
+      const hoehe = 1 + hoeheAn(r);
       ort.setXYZ(i, r.x * hoehe, r.y * hoehe, r.z * hoehe);
     }
     ort.needsUpdate = true;
@@ -233,18 +234,16 @@ export function machePlanet() {
     return summe / (anzahl / 3);
   }
 
-  /* ---------- Eine Mulde in den Planeten drücken ---------- */
+  /* ---------- Eine Stelle glattbügeln ---------- */
   /**
-   * Macht eine Stelle des Planeten eben - für flache Sachen wie einen See.
-   *   breite - wie breit die ebene Fläche werden soll (echtes Maß)
+   * Bügelt die Hügel an einer Stelle weg - für flache Sachen wie
+   * einen See. Der Planet bekommt dadurch keine Beule und keine
+   * Mulde, er wird dort nur ruhiger.
+   *   breite - wie breit die glatte Fläche werden soll (echtes Maß)
    */
   function macheFlacheStelle(zielRichtung, breite) {
     const halbe = (breite * 0.5) / Math.max(0.3, zustand.radius);
-    const weite = Math.min(1.1, halbe * 2.6);     // weiter Übergang = sanfter
-    // Die Tischplatte liegt ein kleines Stück unter der Kugeloberfläche,
-    // damit die Fläche im Mittel auf Bodenhöhe bleibt und nicht aufträgt.
-    const hoehe = Math.cos(Math.min(1.2, halbe * 0.45));
-    flacheStellen.push({ richtung: zielRichtung.clone().normalize(), weite, hoehe });
+    buegleGlatt(zielRichtung, Math.min(0.9, halbe * 2.2));
     formeKugelNeu();
     for (const o of aufgestellt) richteAus(o);
   }
@@ -339,7 +338,7 @@ export function machePlanet() {
     const flach = objekt.userData.flachBreite
       ? krümmungsTiefe(objekt.userData.flachBreite)
       : 0;
-    const boden = zustand.radius * (1 + hoeheAn(r) + ebeneAn(r))
+    const boden = zustand.radius * (1 + hoeheAn(r))
       - objekt.userData.einsinken * zustand.radius
       - (objekt.userData.einsinkenAbsolut || 0)
       - flach;

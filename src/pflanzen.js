@@ -51,7 +51,7 @@ function richteNachAussen(netz, richtung, drehung) {
 /* ==================================================================
    BAUM
    ================================================================== */
-export function baueBaum({ groesse = 1, palette = 'laubGrün', startzahl = 1, blaetter = 26 } = {}) {
+export function baueBaum({ groesse = 1, palette = 'laubGruen', startzahl = 1, blaetter = 26 } = {}) {
   const w = machWuerfel(startzahl * 7919 + 13);
   const baum = new THREE.Group();
   const laubFarben = FARBEN[palette] || FARBEN.laubGruen;
@@ -235,7 +235,7 @@ export function baueBlume({ groesse = 1, sorte = 'rosa', startzahl = 1 } = {}) {
   const anzahl = 5 + Math.floor(w(0, 2));
   for (let i = 0; i < anzahl; i++) {
     const blatt = macheSchnipsel({
-      bild: 'blüten-blatt',
+      bild: 'blueten-blatt',
       farbe: tone(wahl(blattFarben, w), w(-0.03, 0.06)),
       hoehe: 0.19 * groesse,
       woelbung: 0.06 * groesse,
@@ -428,7 +428,7 @@ export function baueStein({ groesse = 1, startzahl = 1 } = {}) {
 /* ==================================================================
    SEEROSE - wächst nur auf dem Wasser
    ================================================================== */
-export function baueSeerose({ groesse = 1, sorte = 'weiß', startzahl = 1 } = {}) {
+export function baueSeerose({ groesse = 1, sorte = 'weiss', startzahl = 1 } = {}) {
   const w = machWuerfel(startzahl * 7919 + 101);
   const rose = new THREE.Group();
   const blattFarben = FARBEN.blueten[sorte] || FARBEN.blueten.weiss;
@@ -458,7 +458,7 @@ export function baueSeerose({ groesse = 1, sorte = 'weiß', startzahl = 1 } = {}
   for (let ring = 0; ring < 2; ring++) {
     for (let i = 0; i < anzahl; i++) {
       const blatt = macheSchnipsel({
-        bild: 'blüten-blatt',
+        bild: 'blueten-blatt',
         farbe: tone(wahl(blattFarben, w), ring * 0.06),
         hoehe: (0.1 - ring * 0.025) * groesse,
         woelbung: 0.03,

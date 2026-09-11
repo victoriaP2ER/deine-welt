@@ -5,15 +5,50 @@
    jedes Dreieck hat seinen eigenen Farbton, wie ein Mosaik aus
    ausgeschnittenen Schnipseln.
 
-   Wenn man giesst, wird der Boden an dieser Stelle wieder gruen:
-   die Dreiecke bekommen einfach eine neue Farbe, so als haette man
-   mit einem dicken Pinsel Gruen darauf gemalt.
+   Wenn man gießt, wird der Boden an dieser Stelle wieder grün:
+   die Dreiecke bekommen einfach eine neue Farbe, so als hätte man
+   mit einem dicken Pinsel Grün darauf gemalt.
    ================================================================== */
 
 import * as THREE from 'three';
 import { machGemaltesBild, machWuerfel } from './schnipsel.js';
 
-/* ---------- Wie huegelig ist der Planet an dieser Stelle? ---------- */
+/* ---------- FLACHE STELLEN ----------
+   Ein See ist flach, der Planet ist rund. Legt man den See einfach
+   obendrauf, stehen seine Ränder in der Luft.
+
+   Darum bekommt der Planet an dieser Stelle eine ebene Fläche - so
+   wie ein kleiner Tisch, auf den der See genau passt. Die Kanten
+   gehen weich in die Rundung über, damit der Planet nicht
+   unförmig wird.
+   ------------------------------------------------------------------ */
+const flacheStellen = [];
+
+/**
+ * Wie weit muss der Boden an dieser Stelle angehoben oder abgesenkt
+ * werden, damit dort eine ebene Fläche entsteht?
+ * (Zurückgegeben wird der Unterschied zum runden Planeten.)
+ */
+export function ebeneAn(richtung) {
+  let aenderung = 0;
+  for (const f of flacheStellen) {
+    const abstand = richtung.distanceTo(f.richtung);
+    if (abstand >= f.weite) continue;
+
+    // Wie eine Tischplatte, die die Kugel berührt: je weiter weg von
+    // der Mitte, desto höher liegt die Platte über der Rundung.
+    const neigung = Math.max(0.4, richtung.dot(f.richtung));
+    const platte = f.hoehe / neigung - 1;
+
+    // weicher Übergang zum runden Rest
+    const t = 1 - abstand / f.weite;
+    const weich = t * t * (3 - 2 * t);
+    aenderung += platte * weich;
+  }
+  return aenderung;
+}
+
+/* ---------- Wie hügelig ist der Planet an dieser Stelle? ---------- */
 // Immer die gleiche Formel -> der Planet sieht jedes Mal gleich aus.
 export function hoeheAn(richtung) {
   const { x, y, z } = richtung;
@@ -35,32 +70,88 @@ export function machePlanet() {
   const sachen = new THREE.Group();        // alles, was auf dem Planeten steht
   gruppe.add(sachen);
 
-  /* ---------- die Kugel ---------- */
-  const geo = new THREE.IcosahedronGeometry(1, 4);
-  const ort = geo.attributes.position;
-  const anzahl = ort.count;
+  /* ---------- die Kugel ----------
+     Sie wird aus Dreiecken gebaut. Je größer der Planet wird, desto
+     mehr Dreiecke braucht er - sonst sieht man bei einer großen Welt
+     die einzelnen Flächen viel zu deutlich.
 
-  // Huegel und Taeler
-  const richtung = new THREE.Vector3();
-  for (let i = 0; i < anzahl; i++) {
-    richtung.fromBufferAttribute(ort, i).normalize();
-    const r = 1 + hoeheAn(richtung);
-    ort.setXYZ(i, richtung.x * r, richtung.y * r, richtung.z * r);
+     Darum kann die Kugel jederzeit feiner neu gebaut werden. Damit
+     dabei nichts verloren geht, merkt sich der Planet, WO gegossen
+     wurde (nicht nur, welche Ecke gerade grün ist).                 */
+  let geo = null;
+  let ort = null;
+  let anzahl = 0;
+  let richtungen = [];
+  let farben = null;
+  let nass = null;         // 0 = trocken, 1 = gegossen
+  let tonwerte = null;     // kleine Farbabweichung pro Dreieck
+  let feinheit = 0;
+  let dreieckMitten = [];
+  let boden = null;   // das Kugel-Mesh (wird gleich gebaut)
+
+  /** Baut die Kugelform neu auf: Hügel, Täler und ebene Stellen. */
+  function formeKugelNeu() {
+    for (let i = 0; i < anzahl; i++) {
+      const r = richtungen[i];
+      const hoehe = 1 + hoeheAn(r) + ebeneAn(r);
+      ort.setXYZ(i, r.x * hoehe, r.y * hoehe, r.z * hoehe);
+    }
+    ort.needsUpdate = true;
+    geo.computeVertexNormals();
+    geo.computeBoundingSphere();
   }
-  geo.computeVertexNormals();
 
-  // Jedes Dreieck bekommt seinen eigenen Farbton
-  const wuerfel = machWuerfel(2024);
-  const farben = new Float32Array(anzahl * 3);
-  const nass = new Float32Array(anzahl);      // 0 = trocken, 1 = gegossen
-  const tonwerte = new Float32Array(anzahl);  // fuer die kleine Farbabweichung
-  for (let dreieck = 0; dreieck < anzahl / 3; dreieck++) {
-    const ton = wuerfel(0, 1);
-    for (let k = 0; k < 3; k++) tonwerte[dreieck * 3 + k] = ton;
+  /** Baut die Kugel mit einer bestimmten Feinheit ganz neu. */
+  function baueKugel(neueFeinheit) {
+    const alteGeo = geo;
+    feinheit = neueFeinheit;
+    geo = new THREE.IcosahedronGeometry(1, neueFeinheit);
+    ort = geo.attributes.position;
+    anzahl = ort.count;
+
+    // Die Grundrichtung jeder Ecke merken
+    richtungen = new Array(anzahl);
+    const richtung = new THREE.Vector3();
+    for (let i = 0; i < anzahl; i++) {
+      richtung.fromBufferAttribute(ort, i).normalize();
+      richtungen[i] = richtung.clone();
+    }
+
+    // Jedes Dreieck bekommt seinen eigenen Farbton.
+    // Der Würfel startet immer gleich - so sieht der Planet nach dem
+    // Umbau genauso aus wie vorher, nur feiner.
+    const wuerfel = machWuerfel(2024);
+    farben = new Float32Array(anzahl * 3);
+    nass = new Float32Array(anzahl);
+    tonwerte = new Float32Array(anzahl);
+    for (let dreieck = 0; dreieck < anzahl / 3; dreieck++) {
+      const ton = wuerfel(0, 1);
+      for (let k = 0; k < 3; k++) tonwerte[dreieck * 3 + k] = ton;
+    }
+    geo.setAttribute('color', new THREE.BufferAttribute(farben, 3));
+
+    // Die Mitte jedes Dreiecks einmal ausrechnen. Beim Gießen muss
+    // dann nur noch verglichen werden, wie weit sie weg ist - das
+    // ist viel schneller, als sie jedes Mal neu zu berechnen.
+    dreieckMitten = new Array(anzahl / 3);
+    for (let dreieck = 0; dreieck < anzahl / 3; dreieck++) {
+      const i = dreieck * 3;
+      const m = new THREE.Vector3();
+      for (let k = 0; k < 3; k++) m.add(richtungen[i + k]);
+      dreieckMitten[dreieck] = m.divideScalar(3).normalize();
+    }
+
+    formeKugelNeu();
+    if (boden) {
+      boden.geometry = geo;
+      if (alteGeo) alteGeo.dispose();
+      trageAllesNeuAuf();          // alles Grün wieder auftragen
+    }
   }
-  geo.setAttribute('color', new THREE.BufferAttribute(farben, 3));
 
-  const boden = new THREE.Mesh(
+  baueKugel(4);
+
+  boden = new THREE.Mesh(
     geo,
     new THREE.MeshStandardMaterial({
       map: machGemaltesBild({
@@ -96,20 +187,20 @@ export function machePlanet() {
   }
   malenAuffrischen();
 
-  /* ---------- Gruen malen (beim Giessen) ---------- */
-  const merker = new THREE.Vector3();
-  function maleGruen(zielRichtung, weite = 0.42, staerke = 1) {
-    const ziel = zielRichtung.clone().normalize();
+  /* ---------- Grün malen (beim Gießen) ----------
+     Jede gegossene Stelle wird in einer Liste gemerkt. Dadurch kann
+     der Planet später aus mehr Dreiecken neu gebaut werden, ohne
+     dass das Grün verloren geht.                                    */
+  const gegosseneStellen = [];
+
+  /** Trägt eine einzelne Stelle auf die Ecken auf. */
+  function trageStelleAuf(stelle) {
+    const { richtung: ziel, weite, staerke } = stelle;
     let etwasGeaendert = false;
-    // Dreieck fuer Dreieck, damit ganze Papierstuecke die Farbe wechseln
-    for (let dreieck = 0; dreieck < anzahl / 3; dreieck++) {
+    // Dreieck für Dreieck, damit ganze Papierstücke die Farbe wechseln
+    for (let dreieck = 0; dreieck < dreieckMitten.length; dreieck++) {
       const i = dreieck * 3;
-      merker.set(0, 0, 0);
-      for (let k = 0; k < 3; k++) {
-        merker.x += ort.getX(i + k); merker.y += ort.getY(i + k); merker.z += ort.getZ(i + k);
-      }
-      merker.divideScalar(3).normalize();
-      const abstand = merker.distanceTo(ziel);
+      const abstand = dreieckMitten[dreieck].distanceTo(ziel);
       if (abstand > weite) continue;
       const wieViel = staerke * (1 - Math.pow(abstand / weite, 1.6));
       for (let k = 0; k < 3; k++) {
@@ -117,18 +208,48 @@ export function machePlanet() {
         if (neu > nass[i + k]) { nass[i + k] = neu; etwasGeaendert = true; }
       }
     }
+    return etwasGeaendert;
+  }
+
+  function maleGruen(zielRichtung, weite = 0.42, staerke = 1) {
+    const stelle = { richtung: zielRichtung.clone().normalize(), weite, staerke };
+    gegosseneStellen.push(stelle);
+    const etwasGeaendert = trageStelleAuf(stelle);
     if (etwasGeaendert) malenAuffrischen();
     return etwasGeaendert;
   }
 
-  /** Wie gruen ist der Planet insgesamt? 0 = ganz trocken, 1 = alles gruen */
+  /** Alle gegossenen Stellen neu auftragen (nach einem Umbau). */
+  function trageAllesNeuAuf() {
+    nass.fill(0);
+    for (const stelle of gegosseneStellen) trageStelleAuf(stelle);
+    malenAuffrischen();
+  }
+
+  /** Wie grün ist der Planet insgesamt? 0 = ganz trocken, 1 = alles grün */
   function wieGruen() {
     let summe = 0;
     for (let i = 0; i < anzahl; i += 3) summe += nass[i];
     return summe / (anzahl / 3);
   }
 
-  /* ---------- Groesse ---------- */
+  /* ---------- Eine Mulde in den Planeten drücken ---------- */
+  /**
+   * Macht eine Stelle des Planeten eben - für flache Sachen wie einen See.
+   *   breite - wie breit die ebene Fläche werden soll (echtes Maß)
+   */
+  function macheFlacheStelle(zielRichtung, breite) {
+    const halbe = (breite * 0.5) / Math.max(0.3, zustand.radius);
+    const weite = Math.min(1.1, halbe * 2.6);     // weiter Übergang = sanfter
+    // Die Tischplatte liegt ein kleines Stück unter der Kugeloberfläche,
+    // damit die Fläche im Mittel auf Bodenhöhe bleibt und nicht aufträgt.
+    const hoehe = Math.cos(Math.min(1.2, halbe * 0.45));
+    flacheStellen.push({ richtung: zielRichtung.clone().normalize(), weite, hoehe });
+    formeKugelNeu();
+    for (const o of aufgestellt) richteAus(o);
+  }
+
+  /* ---------- Größe ---------- */
   const zustand = {
     radius: 0.0001,
     zielRadius: 0.0001,
@@ -138,13 +259,20 @@ export function machePlanet() {
   const aufgestellt = [];
 
   /**
-   * Stellt ein Objekt auf die Planetenoberflaeche.
+   * Stellt ein Objekt auf die Planetenoberfläche.
    * richtung = in welche Himmelsrichtung (ein Vektor vom Mittelpunkt weg)
    */
-  function stelleAuf(objekt, richtungRoh, { einsinken = 0.02, drehung = 0 } = {}) {
+  function stelleAuf(objekt, richtungRoh,
+                     { einsinken = 0.02, einsinkenAbsolut = 0,
+                       flachBreite = 0, drehung = 0 } = {}) {
     const richtung = richtungRoh.clone().normalize();
     objekt.userData.richtung = richtung;
     objekt.userData.einsinken = einsinken;
+    // "einsinkenAbsolut" ist eine feste Tiefe in Weltmass - gut für
+    // Sachen wie einen See, die immer gleich tief im Boden liegen
+    // sollen, egal wie groß der Planet gerade ist.
+    objekt.userData.einsinkenAbsolut = einsinkenAbsolut;
+    objekt.userData.flachBreite = flachBreite;
     objekt.userData.eigenDrehung = drehung;
     sachen.add(objekt);
     aufgestellt.push(objekt);
@@ -156,16 +284,16 @@ export function machePlanet() {
   /* ------------------------------------------------------------------
      GROSSE TREFFERFLAECHE
 
-     Ein Haeschen oder eine Blume ist klein - mit dem Finger auf dem
+     Ein Häschen oder eine Blume ist klein - mit dem Finger auf dem
      Handy trifft man sie kaum. Darum bekommt jedes antippbare Ding
-     einen unsichtbaren Ball drumherum, der die Beruehrung auffaengt.
+     einen unsichtbaren Ball drumherum, der die Beruehrung auffängt.
      Man sieht ihn nicht, aber man trifft viel leichter.
      ------------------------------------------------------------------ */
   function gibGrosseTrefferflaeche(objekt) {
     if (objekt.userData.hatTrefferBall) return;
     objekt.userData.hatTrefferBall = true;
 
-    // Wie gross ist das Ding ueberhaupt?
+    // Wie groß ist das Ding überhaupt?
     let hoehe = objekt.userData.hoehe;
     if (!hoehe) {
       const kasten = new THREE.Box3().setFromObject(objekt);
@@ -180,16 +308,41 @@ export function machePlanet() {
     );
     ball.position.y = hoehe * 0.45;
     // Das Ding selbst wird beim Wachsen skaliert - der Ball soll
-    // dabei nicht mitschrumpfen, darum haengt er am Objekt und
-    // wird beim Antippen ueber die Elternkette gefunden.
+    // dabei nicht mitschrumpfen, darum hängt er am Objekt und
+    // wird beim Antippen über die Elternkette gefunden.
     objekt.add(ball);
     objekt.userData.trefferBall = ball;
   }
 
   const hoch = new THREE.Vector3(0, 1, 0);
+  /* ------------------------------------------------------------------
+     FLACHE SACHEN AUF EINER RUNDEN WELT
+
+     Ein See ist flach wie ein Teller, der Planet ist rund. Legt man
+     den Teller obendrauf, stehen seine Raender in der Luft, weil die
+     Kugel darunter wegfaellt.
+
+     Darum versenken wir flache Sachen genau so tief, dass ihr Rand
+     den Boden beruehrt. Wie tief das ist, haengt davon ab, wie breit
+     das Ding ist und wie gross der Planet gerade ist - darum wird es
+     jedes Mal neu ausgerechnet, auch wenn der Planet waechst.
+     ------------------------------------------------------------------ */
+  function krümmungsTiefe(breite) {
+    const halbe = breite * 0.5;
+    const r = zustand.radius;
+    if (halbe >= r) return r * 0.6;      // riesig: einfach tief rein
+    return r - Math.sqrt(Math.max(0, r * r - halbe * halbe));
+  }
+
   function richteAus(objekt) {
     const r = objekt.userData.richtung;
-    const boden = zustand.radius * (1 + hoeheAn(r)) - objekt.userData.einsinken * zustand.radius;
+    const flach = objekt.userData.flachBreite
+      ? krümmungsTiefe(objekt.userData.flachBreite)
+      : 0;
+    const boden = zustand.radius * (1 + hoeheAn(r) + ebeneAn(r))
+      - objekt.userData.einsinken * zustand.radius
+      - (objekt.userData.einsinkenAbsolut || 0)
+      - flach;
     objekt.position.copy(r).multiplyScalar(boden);
     objekt.quaternion.setFromUnitVectors(hoch, r);
     if (objekt.userData.eigenDrehung) {
@@ -203,11 +356,32 @@ export function machePlanet() {
     sachen.remove(objekt);
   }
 
+  /** Wie fein muss die Kugel bei dieser Größe sein?
+   *
+   *  Die Kugel besteht aus 20 großen Flächen, und jede wird in
+   *  (feinheit+1)² kleine Dreiecke geteilt. Wenn der Planet doppelt
+   *  so groß wird, braucht er also etwa viermal so viele Dreiecke,
+   *  damit die einzelnen Flächen gleich klein aussehen.
+   *
+   *  Wenige Stufen, damit nicht bei jedem kleinen Wachstum die ganze
+   *  Kugel neu gebaut werden muss.                                  */
+  function passendeFeinheit(r) {
+    if (r < 1.3) return 4;      //    500 Dreiecke
+    if (r < 1.9) return 7;      //  1 280
+    if (r < 2.6) return 10;     //  2 420
+    if (r < 3.6) return 13;     //  3 920
+    return 16;                  //  5 780
+  }
+
   function setzeRadius(r) {
     zustand.radius = r;
     boden.scale.setScalar(r);
+    // Je größer der Planet, desto mehr Dreiecke - sonst sieht man
+    // die einzelnen Flächen zu deutlich.
+    const gewuenscht = passendeFeinheit(r);
+    if (gewuenscht !== feinheit) baueKugel(gewuenscht);
     // Solange der Planet noch winzig ist, ist er gar nicht da: sonst
-    // wuerde die unsichtbare Mini-Kugel schon Fingertipps abfangen.
+    // würde die unsichtbare Mini-Kugel schon Fingertipps abfangen.
     boden.visible = r > 0.04;
     for (const o of aufgestellt) richteAus(o);
   }
@@ -220,13 +394,13 @@ export function machePlanet() {
 
   /* ---------- jedes Bild ---------- */
   function belebe(zeit, schritt, kameraOrt) {
-    // sanft zur Zielgroesse wachsen
+    // sanft zur Zielgröße wachsen
     if (Math.abs(zustand.radius - zustand.zielRadius) > 0.0004) {
       const neu = THREE.MathUtils.lerp(zustand.radius, zustand.zielRadius, 1 - Math.pow(0.004, schritt));
       setzeRadius(neu);
     }
     // Die Kameraposition wird weitergegeben: Dinge mit Gesicht
-    // koennen sich damit zum Betrachter drehen.
+    // können sich damit zum Betrachter drehen.
     for (const o of aufgestellt) {
       if (o.userData.belebe) o.userData.belebe(zeit, schritt, kameraOrt);
     }
@@ -235,7 +409,7 @@ export function machePlanet() {
   return {
     gruppe, boden, sachen,
     stelleAuf, nimmWeg, richteAus, setzeRadius, wachseAuf, belebe,
-    maleGruen, wieGruen,
+    maleGruen, wieGruen, macheFlacheStelle,
     get radius() { return zustand.radius; },
     get zielRadius() { return zustand.zielRadius; },
     aufgestellt,

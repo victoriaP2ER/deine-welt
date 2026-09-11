@@ -2,7 +2,7 @@
    TIERE - die ziehen ein, wenn es der Welt besser geht.
 
    Auch sie sind aus Schnipseln geklebt. Wichtig: die Fluegel und
-   Ohren werden NICHT festgebacken, damit sie sich bewegen koennen.
+   Ohren werden NICHT festgebacken, damit sie sich bewegen können.
    ================================================================== */
 
 import * as THREE from 'three';
@@ -182,7 +182,7 @@ export function baueHaeschen({ groesse = 1, startzahl = 1 } = {}) {
    REGENWOLKE
 
    Aus Papierklecksen in drei Lagen geschichtet: hinten dunkler und
-   groesser, vorne heller - so wirkt sie bauschig.
+   größer, vorne heller - so wirkt sie bauschig.
 
    Wichtig ist die Richtung: die Wolke schwebt UEBER einer Stelle des
    Planeten, und ihre Tropfen fallen nach unten in Richtung
@@ -194,8 +194,8 @@ export function baueWolke({ groesse = 1, startzahl = 1 } = {}) {
   const wolke = new THREE.Group();
 
   /* ---------- der bauschige Koerper ----------
-     Die Kleckse sitzen auf einer platt gedrueckten Kugel und zeigen
-     nach aussen - genau wie die Blaetter einer Baumkrone. Dadurch
+     Die Kleckse sitzen auf einer platt gedrückten Kugel und zeigen
+     nach aussen - genau wie die Blätter einer Baumkrone. Dadurch
      hat die Wolke von allen Seiten Volumen und ist nicht flach.    */
   const ballen = new THREE.Group();
   const gold = Math.PI * (3 - Math.sqrt(5));
@@ -207,7 +207,7 @@ export function baueWolke({ groesse = 1, startzahl = 1 } = {}) {
     const winkel = gold * i + w(-0.25, 0.25);
     const p = new THREE.Vector3(Math.cos(winkel) * r, y, Math.sin(winkel) * r);
 
-    // platt gedrueckt und breiter als hoch - so sehen Wolken aus
+    // platt gedrückt und breiter als hoch - so sehen Wolken aus
     const ort = p.clone()
       .multiply(new THREE.Vector3(1.35, 0.52, 0.85))
       .multiplyScalar(0.24 * groesse * w(0.88, 1.12));
@@ -221,7 +221,7 @@ export function baueWolke({ groesse = 1, startzahl = 1 } = {}) {
       woelbung: 0.11 * groesse,
     });
     k.position.copy(ort);
-    // nach aussen schauen, wie die Blaetter am Baum
+    // nach aussen schauen, wie die Blätter am Baum
     k.lookAt(ort.clone().add(p));
     k.rotateZ(w(0, Math.PI * 2));
     ballen.add(k);
@@ -230,21 +230,21 @@ export function baueWolke({ groesse = 1, startzahl = 1 } = {}) {
 
   /* ---------- das Gesicht ----------
      Es sitzt deutlich vor der Wolke, damit es nicht zwischen den
-     Klecksen verschwindet - und ist gross genug, um es auch von
+     Klecksen verschwindet - und ist groß genug, um es auch von
      weiter weg zu erkennen.                                        */
-  // Das Gesicht haengt an einem Dreh-Teller: der dreht sich so, dass
+  // Das Gesicht hängt an einem Dreh-Teller: der dreht sich so, dass
   // das Gesicht immer dich anschaut. Sonst sieht man von der Seite
   // nur ein paar Punkte im Nichts schweben.
   const gesichtsTeller = new THREE.Group();
   wolke.add(gesichtsTeller);
 
   const gesicht = new THREE.Group();
-  // knapp auf der Wolkenoberflaeche - die Wolke ist flacher als breit
+  // knapp auf der Wolkenoberfläche - die Wolke ist flacher als breit
   gesicht.position.set(0, 0.01 * groesse, 0.15 * groesse);
   gesichtsTeller.add(gesicht);
 
   for (const seite of [-1, 1]) {
-    // weisser Augapfel, damit die Pupille Kontrast hat
+    // weißer Augapfel, damit die Pupille Kontrast hat
     const weiss = macheSchnipsel({ bild: 'auge', farbe: '#ffffff', hoehe: 0.075 * groesse, woelbung: 0.01 });
     weiss.position.set(seite * 0.072 * groesse, 0.02 * groesse, 0);
     gesicht.add(weiss);
@@ -267,7 +267,7 @@ export function baueWolke({ groesse = 1, startzahl = 1 } = {}) {
   /* ---------- die Tropfen ----------
      Sie fallen in Richtung des lokalen "unten" - und weil die Wolke
      mit dem Bauch zum Planeten aufgestellt wird, zeigt das genau
-     zur Planetenoberflaeche.                                        */
+     zur Planetenoberfläche.                                        */
   const TROPFEN_ANZAHL = 16;
   const tropfen = [];
   for (let i = 0; i < TROPFEN_ANZAHL; i++) {
@@ -337,7 +337,7 @@ export function baueWolke({ groesse = 1, startzahl = 1 } = {}) {
       t.visible = true;
       t.position.copy(t.userData.seite);
       t.position.y = -0.14 * groesse - f * z.fallweg;
-      // beim Fallen wird er schmaler und laenger
+      // beim Fallen wird er schmaler und länger
       t.scale.set(0.85 + f * 0.2, 1 + f * 0.5, 1);
       t.rotation.y = zeit * 2 + i;
     });

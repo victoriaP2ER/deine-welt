@@ -1,7 +1,7 @@
 /* ==================================================================
    DIE GESCHICHTE
 
-   Das ist der Teil, den du am leichtesten aendern kannst!
+   Das ist der Teil, den du am leichtesten ändern kannst!
    Jedes Kapitel hat zwei Sachen:
 
      spiel:  was passiert, wenn du das Kapitel zum ersten Mal spielst
@@ -15,7 +15,7 @@
 import * as THREE from 'three';
 
 /* ---------- Wo steht was auf dem Planeten? ----------
-   Ein Vektor zeigt vom Mittelpunkt nach draussen.
+   Ein Vektor zeigt vom Mittelpunkt nach draußen.
    (0,0,1) = vorne (zu dir),  (0,0,-1) = hinten,  (0,1,0) = oben     */
 const ORTE = {
   grasTrocken: [
@@ -65,7 +65,7 @@ function legeHin(s, objekt, ort) {
   return objekt;
 }
 
-/** Deko-Stuecke, die bei jedem Wachsen neu zum Vorschein kommen */
+/** Deko-Stücke, die bei jedem Wachsen neu zum Vorschein kommen */
 const dekoBauer = [
   (s, i) => s.bauer.baueStein({ groesse: 0.8, startzahl: i + 10 }),
   (s, i) => s.bauer.bauePilz({ groesse: 1, startzahl: i + 20 }),
@@ -79,7 +79,7 @@ const dekoBauer = [
 
 /**
  * "Ein neuer Teil kommt zum Vorschein" - immer wenn die Welt
- * waechst, taucht an einer neuen Stelle etwas auf.
+ * wächst, taucht an einer neuen Stelle etwas auf.
  */
 function enthuelleNeuesStueck(s, nummer, mitFunken = true) {
   const i = nummer % ORTE.deko.length;
@@ -99,7 +99,7 @@ function enthuelleNeuesStueck(s, nummer, mitFunken = true) {
 /* ------------------------------------------------------------------
    WOLKEN
 
-   Fuenf Wolken verteilen sich rund um den Planeten, regnen ueberall
+   Fünf Wolken verteilen sich rund um den Planeten, regnen überall
    gleichzeitig - und ziehen danach wieder weiter.
    ------------------------------------------------------------------ */
 const WOLKEN_ORTE = [
@@ -112,7 +112,7 @@ function stelleWolkenAuf(s) {
   WOLKEN_ORTE.forEach((ort, i) => {
     const wolke = s.bauer.baueWolke({ groesse: 0.85 + i * 0.06, startzahl: i + 2 });
     const richtung = v(ort);
-    // negatives "einsinken" heisst: sie schwebt ueber der Oberflaeche
+    // negatives "einsinken" heißt: sie schwebt über der Oberfläche
     s.planet.stelleAuf(wolke, richtung, { einsinken: -0.85, drehung: i * 1.1 });
     // der Fallweg der Tropfen ist genau der Abstand bis zum Boden
     wolke.setzeFallweg(s.planet.radius * 0.85);
@@ -191,8 +191,8 @@ const kapitel = [
     spiel: async (s) => {
       await s.mondSagt([
         'Dieses kleine Licht da... das ist mein Planet.',
-        'Meinem Planeten ging es so schlecht, dass er sich immer kleiner gefuehlt hat.',
-        'Bis er am Ende ganz winzig wurde. Weil er dachte, niemand interessiert sich fuer so einen kleinen Planeten.',
+        'Meinem Planeten ging es so schlecht, dass er sich immer kleiner gefühlt hat.',
+        'Bis er am Ende ganz winzig wurde. Weil er dachte, niemand interessiert sich für so einen kleinen Planeten.',
         'Streichel ihn doch mal. Damit er merkt, dass du da bist.',
       ], 'traurig');
 
@@ -220,28 +220,28 @@ const kapitel = [
   {
     id: 'giesskanne-finden',
     sofort: (s) => {
-      s.ui.fuegeWerkzeugHinzu('giesskanne', 'bilder/icon-giesskanne.svg', 'Giesskanne');
+      s.ui.fuegeWerkzeugHinzu('giesskanne', 'bilder/icon-giesskanne.svg', 'Gießkanne');
     },
     spiel: async (s) => {
       await s.mondSagt([
         'Schau nur, sein Gras ist ganz vertrocknet.',
-        'Und seine Blubber-Blumen haengen alle traurig herunter.',
+        'Und seine Blubber-Blumen hängen alle traurig herunter.',
         'Er hat so lange keinen Regen mehr gehabt.',
-        'Irgendwo liegt noch meine alte Giesskanne. Dreh den Planeten mal um - sie muss auf der anderen Seite sein!',
+        'Irgendwo liegt noch meine alte Gießkanne. Dreh den Planeten mal um - sie muss auf der anderen Seite sein!',
       ], 'normal');
 
       const kanne = legeHin(s, s.bauer.baueGiesskanne({ groesse: 1.5 }), ORTE.giesskanne);
-      const treffer = await s.warteAufTipp('giesskanne', 'dreh den Planeten und suche die Giesskanne');
+      const treffer = await s.warteAufTipp('giesskanne', 'dreh den Planeten und suche die Gießkanne');
 
       // aufheben
       s.klang.klangPlopp();
       s.funkeBei(treffer.punkt, 5);
       s.planet.nimmWeg(kanne);
-      s.ui.fuegeWerkzeugHinzu('giesskanne', 'bilder/icon-giesskanne.svg', 'Giesskanne');
+      s.ui.fuegeWerkzeugHinzu('giesskanne', 'bilder/icon-giesskanne.svg', 'Gießkanne');
 
       await s.mondSagt([
         'Da ist sie ja! Die habe ich seit Ewigkeiten nicht mehr gesehen.',
-        'Tipp jetzt auf das trockene Gras oder auf eine welke Blume. Dann giesst du sie.',
+        'Tipp jetzt auf das trockene Gras oder auf eine welke Blume. Dann gießt du sie.',
       ], 'gluecklich');
     },
   },
@@ -252,7 +252,7 @@ const kapitel = [
   {
     id: 'zum-ersten-mal-giessen',
     sofort: (s) => {
-      // drei Buescheln sind schon gegossen
+      // drei Büscheln sind schon gegossen
       const trockene = s.planet.aufgestellt.filter((o) => o.userData.typ === 'gras-trocken');
       trockene.slice(0, 3).forEach((g) => s.tauscheGrasAus(g));
       s.planet.maleGruen(v(ORTE.grasTrocken[0]), 0.4, 1);
@@ -277,19 +277,19 @@ const kapitel = [
 
       await s.mondSagt([
         'Hast du das gesehen?!',
-        'Er ist ein kleines Stueck groesser geworden!',
-        'So ist das: Wenn du ihm etwas Gutes tust, waechst er. Weil er sich wieder wichtig fuehlt.',
+        'Er ist ein kleines Stück größer geworden!',
+        'So ist das: Wenn du ihm etwas Gutes tust, wächst er. Weil er sich wieder wichtig fühlt.',
       ], 'gluecklich');
 
-      // Weil der Planet gewachsen ist, kommt ein Stueck von ihm zum
-      // Vorschein, das vorher nicht da war: seine Apfelbaeume.
+      // Weil der Planet gewachsen ist, kommt ein Stück von ihm zum
+      // Vorschein, das vorher nicht da war: seine Apfelbäume.
       await s.stelleApfelbaeumeAuf();
       await s.warte(1.2);
       await s.mondSagt(['Warte mal ... da ist noch etwas!'], 'staunen');
       await s.warteAufUmsehen('sieh dich um');
       await s.mondSagt([
-        'Seine Apfelbaeume! Die hatte ich ganz vergessen.',
-        'Sie sind auch alle vertrocknet. Giess sie doch mal.',
+        'Seine Apfelbäume! Die hatte ich ganz vergessen.',
+        'Sie sind auch alle vertrocknet. Gieß sie doch mal.',
       ], 'staunen');
     },
   },
@@ -298,11 +298,11 @@ const kapitel = [
      4 - DIE APFELBAEUME AUFWECKEN
      --------------------------------------------------------------- */
   {
-    id: 'die-apfelbaeume',
+    id: 'die-apfelbäume',
     sofort: (s) => {
       s.planet.wachseAuf(0.92);
       s.planet.setzeRadius(0.92);
-      // die Baeume stehen schon gruen da
+      // die Bäume stehen schon grün da
       s.stelleApfelbaeumeAuf().then(() => {
         const welke = s.planet.aufgestellt.filter((o) => o.userData.typ === 'apfelbaum-trocken');
         welke.forEach((b) => s.verwandleBaum(b));
@@ -312,7 +312,7 @@ const kapitel = [
     spiel: async (s) => {
       await s.warteBis(
         () => s.zaehle('apfelbaum-trocken') === 0 && s.zaehle('apfelbaum') > 0,
-        'giesse die Apfelbaeume'
+        'gieße die Apfelbäume'
       );
       await s.warte(1.8);
 
@@ -321,8 +321,8 @@ const kapitel = [
       await s.warte(1);
 
       await s.mondSagt([
-        'Aepfel! Richtige, echte Aepfel!',
-        'Weisst du, was das Beste an einem Baum ist? Er bleibt.',
+        'Äpfel! Richtige, echte Äpfel!',
+        'Weißt du, was das Beste an einem Baum ist? Er bleibt.',
         'Auch wenn du mal nicht da bist.',
       ], 'gluecklich');
     },
@@ -353,10 +353,10 @@ const kapitel = [
 
       await s.mondSagt([
         'Warte mal... da ist noch etwas aufgetaucht.',
-        'Dreh ihn nochmal. Ich glaube, das ist eine Samentuete!',
+        'Dreh ihn nochmal. Ich glaube, das ist eine Samentüte!',
       ], 'staunen');
 
-      const treffer = await s.warteAufTipp('samentuete', 'suche die Samentuete');
+      const treffer = await s.warteAufTipp('samentuete', 'suche die Samentüte');
       s.klang.klangPlopp();
       s.funkeBei(treffer.punkt, 5);
       s.planet.nimmWeg(tuete);
@@ -364,7 +364,7 @@ const kapitel = [
 
       await s.mondSagt([
         'Blumensamen! Die hat er sich immer gewuenscht.',
-        'Nimm die Samentuete und tippe auf den Boden. Dann waechst dort eine Blume.',
+        'Nimm die Samentüte und tippe auf den Boden. Dann wächst dort eine Blume.',
       ], 'gluecklich');
 
       const vorher = s.zustand.gepflanzt;
@@ -386,7 +386,7 @@ const kapitel = [
   {
     id: 'die-wolke',
     sofort: (s) => {
-      // alles ist gruen geworden, die Schmetterlinge sind da
+      // alles ist grün geworden, die Schmetterlinge sind da
       ORTE.grasTrocken.forEach((ort) => s.planet.maleGruen(v(ort), 0.5, 1));
       ORTE.deko.forEach((ort) => s.planet.maleGruen(v(ort), 0.45, 1));
       WOLKEN_ORTE.forEach((ort) => s.planet.maleGruen(v(ort), 0.55, 1));
@@ -401,7 +401,7 @@ const kapitel = [
         'Das riecht nach Regen. Das hat es hier seit Ewigkeiten nicht mehr gegeben.',
       ], 'staunen');
 
-      // Fuenf Wolken schweben heran und verteilen sich rundherum
+      // Fünf Wolken schweben heran und verteilen sich rundherum
       const wolken = stelleWolkenAuf(s);
       s.klang.klangFunke();
       await s.warte(1.8);
@@ -413,11 +413,11 @@ const kapitel = [
       // PAUSE: die Wolken erst mal anschauen und herumfliegen
       await s.warteAufUmsehen('schau dir die Wolken an');
 
-      // Es regnet ueberall gleichzeitig
+      // Es regnet überall gleichzeitig
       for (const wolke of wolken) wolke.regne(true);
       s.klang.klangGiessen();
 
-      // Der Regen macht den ganzen Planeten gruen - Stelle fuer Stelle
+      // Der Regen macht den ganzen Planeten grün - Stelle für Stelle
       const alleStellen = [...WOLKEN_ORTE, ...ORTE.grasTrocken, ...ORTE.deko];
       for (let i = 0; i < alleStellen.length; i++) {
         s.planet.maleGruen(v(alleStellen[i]), 0.5, 0.55);
@@ -425,7 +425,7 @@ const kapitel = [
         await s.warte(0.22);
       }
 
-      // vertrocknete Sachen bluehen im Regen auf
+      // vertrocknete Sachen blühen im Regen auf
       const welkeBaeume = s.planet.aufgestellt.filter((o) => o.userData.typ === 'apfelbaum-trocken');
       for (const b of welkeBaeume) { s.verwandleBaum(b); await s.warte(0.4); }
       const welkeBlumen = s.planet.aufgestellt.filter((o) => o.userData.typ === 'blubber-trocken');
@@ -439,7 +439,7 @@ const kapitel = [
       for (const wolke of wolken) wolke.regne(false);
       await s.warte(1.2);
       for (const wolke of wolken) {
-        // sie schweben nach draussen weg und werden kleiner
+        // sie schweben nach draußen weg und werden kleiner
         s.lassWachsen(wolke, 0.001, 2.2);
       }
       await s.warte(2.4);
@@ -467,7 +467,7 @@ const kapitel = [
      7 - DAS HAESCHEN ZIEHT EIN
      --------------------------------------------------------------- */
   {
-    id: 'das-haeschen',
+    id: 'das-häschen',
     sofort: (s) => {
       const hase = s.bauer.baueHaeschen({ groesse: 1, startzahl: 5 });
       s.planet.stelleAuf(hase, v(ORTE.haeschen), { einsinken: 0.01 });
@@ -477,12 +477,12 @@ const kapitel = [
     },
     spiel: async (s) => {
       await s.mondSagt([
-        'Psst! Hast du das gehoert?',
+        'Psst! Hast du das gehört?',
         'Da hat sich jemand auf deinem Planeten eingerichtet.',
         'Aber es ist schuechtern. Es sitzt irgendwo, wo du gerade nicht hinschaust.',
       ], 'staunen');
 
-      // Das Haeschen setzt sich dorthin, wo man es NICHT sieht -
+      // Das Häschen setzt sich dorthin, wo man es NICHT sieht -
       // man muss den Planeten drehen und es suchen.
       const hase = s.bauer.baueHaeschen({ groesse: 1, startzahl: 5 });
       hase.scale.setScalar(0.05);
@@ -500,7 +500,7 @@ const kapitel = [
         schimmer.userData.belebe(zeit, schritt);
       };
 
-      await s.warteAufTipp('haeschen', 'dreh den Planeten und suche das Haeschen');
+      await s.warteAufTipp('haeschen', 'dreh den Planeten und suche das Häschen');
 
       // gefunden!
       hase.remove(schimmer);
@@ -514,7 +514,7 @@ const kapitel = [
       await s.warteAufUmsehen('schau es dir an');
 
       await s.mondSagt([
-        'Ein Haeschen ist eingezogen!',
+        'Ein Häschen ist eingezogen!',
         'Es hat sich einfach ein Plaetzchen gesucht und gesagt: hier bleibe ich.',
         'Du kannst es streicheln, wann du willst. Tipp es einfach an.',
       ], 'gluecklich');
@@ -541,9 +541,9 @@ const kapitel = [
       await s.mondSagt([
         'Darf ich dir etwas sagen?',
         'Als du gekommen bist, war er ein winziger, trauriger Punkt.',
-        'Jetzt hat er Gras und Blumen und einen Baum und ein Haeschen.',
-        'Und er ist gewachsen. Bei jedem Mal ein kleines Stueck.',
-        'Danke, dass du da warst.',
+        'Jetzt hat er Gras und Blumen und einen Baum und ein Häschen.',
+        'Und er ist gewachsen. Bei jedem Mal ein kleines Stück.',
+        'Danke, dass du da bist. Für meinen Planeten.',
       ], 'gluecklich');
 
       s.lasseWeltWachsen(0.08);
@@ -553,13 +553,13 @@ const kapitel = [
 
       await s.mondSagt([
         'Du kannst weitermachen, so lange du magst.',
-        'Giesse, pflanze Blumen, streichel das Haeschen. Er freut sich ueber jedes Mal.',
-        'Und je mehr du machst, desto groesser wird er. Dann kommen sogar Seen zum Vorschein!',
+        'Gieße, pflanze Blumen, streichel das Häschen. Er freut sich über jedes Mal.',
+        'Und je mehr du machst, desto größer wird er. Dann kommen sogar Seen zum Vorschein!',
         'Wenn du Samen aufs Wasser streust, wachsen dort Seerosen.',
         'Und wenn du reden willst: tipp mich einfach an.',
       ], 'gluecklich');
 
-      s.ui.zeigeHinweis('Giesse und pflanze, so viel du magst - er waechst weiter');
+      s.ui.zeigeHinweis('Gieße und pflanze, so viel du magst - er wächst weiter');
       setTimeout(() => s.ui.zeigeHinweis(''), 8000);
     },
   },
@@ -589,8 +589,8 @@ export async function erzaehleGeschichte(spiel, gespeichert) {
     spiel.zustand.gepflanzt = gespeichert.gepflanzt || 0;
     spiel.zustand.guteTaten = gespeichert.guteTaten || 0;
     if (gespeichert.seen) spiel.stelleSeenWiederHer(gespeichert.seen);
-    // Wenn der Planet durch viele gute Taten schon groesser war,
-    // soll er auch wieder so gross sein.
+    // Wenn der Planet durch viele gute Taten schon größer war,
+    // soll er auch wieder so groß sein.
     if (gespeichert.radius && gespeichert.radius > spiel.planet.zielRadius) {
       spiel.planet.setzeRadius(gespeichert.radius);
       spiel.planet.wachseAuf(gespeichert.radius);

@@ -3,8 +3,8 @@
    ================================================================== */
 
 let hof = null;          // der "AudioContext"
-let lautstaerke = null;  // Regler fuer alle Geraeusche
-let musikRegler = null;  // eigener Regler fuer die Hintergrundmusik
+let lautstaerke = null;  // Regler für alle Geraeusche
+let musikRegler = null;  // eigener Regler für die Hintergrundmusik
 let hallRaum = null;     // gemeinsamer Hall - macht alles weich und weit
 export let tonAn = true;
 
@@ -29,8 +29,8 @@ function starte() {
 /* ------------------------------------------------------------------
    HALL
 
-   Ein Hall macht Toene weit und weich - so als waere man in einer
-   grossen Halle. Wir brauchen dafuer keine Datei: der Computer
+   Ein Hall macht Töne weit und weich - so als wäre man in einer
+   großen Halle. Wir brauchen dafür keine Datei: der Computer
    wuerfelt sich ein Rauschen zusammen, das langsam leiser wird.
    Genau das ist ein Hall.
    ------------------------------------------------------------------ */
@@ -63,7 +63,7 @@ function inDenHall(knoten, menge = 0.35) {
   g.connect(hallRaum);
 }
 
-// Handys erlauben Toene erst nach der ersten Beruehrung
+// Handys erlauben Töne erst nach der ersten Beruehrung
 export function weckeTon() {
   const h = starte();
   if (h && h.state === 'suspended') h.resume();
@@ -100,7 +100,7 @@ function ton({ hoehe = 440, dauer = 0.2, form = 'sine', laut = 0.3, gleiten = 0,
   o.stop(jetzt + dauer + 0.05);
 }
 
-/* ---------- Rauschen (fuer Wasser) ---------- */
+/* ---------- Rauschen (für Wasser) ---------- */
 function rauschen({ dauer = 0.5, laut = 0.2, filter = 900, verzug = 0 }) {
   const h = starte();
   if (!h || !tonAn) return;
@@ -123,7 +123,7 @@ function rauschen({ dauer = 0.5, laut = 0.2, filter = 900, verzug = 0 }) {
   quelle.start(jetzt);
 }
 
-/* ---------- die Toene des Spiels ---------- */
+/* ---------- die Töne des Spiels ---------- */
 
 const TONLEITER = [261.6, 293.7, 329.6, 392, 440, 523.3, 587.3, 659.3];
 
@@ -143,7 +143,7 @@ export function klangPlopp() {
   ton({ hoehe: 780, dauer: 0.16, form: 'sine', laut: 0.14, verzug: 0.06, gleiten: 200 });
 }
 
-/** Giessen */
+/** Gießen */
 export function klangGiessen() {
   rauschen({ dauer: 0.75, laut: 0.16, filter: 1100 });
   for (let i = 0; i < 5; i++) {
@@ -151,7 +151,7 @@ export function klangGiessen() {
   }
 }
 
-/** Etwas waechst / die Welt wird groesser */
+/** Etwas wächst / die Welt wird größer */
 export function klangWachsen() {
   [0, 1, 2, 4].forEach((s, i) => {
     ton({ hoehe: TONLEITER[s], dauer: 0.7, form: 'triangle', laut: 0.16, verzug: i * 0.11 });
@@ -196,7 +196,7 @@ function glocke({ hoehe, dauer = 1.2, laut = 0.13, verzug = 0 }) {
   if (!h || !tonAn) return;
   const jetzt = h.currentTime + verzug;
 
-  // Grundton plus zwei Obertoene: so klingt eine echte Glocke
+  // Grundton plus zwei Obertöne: so klingt eine echte Glocke
   const teile = [
     { faktor: 1, laut: 1, form: 'sine' },
     { faktor: 2.01, laut: 0.4, form: 'sine' },
@@ -222,7 +222,7 @@ function glocke({ hoehe, dauer = 1.2, laut = 0.13, verzug = 0 }) {
   }
 }
 
-// Eine Tonleiter ohne "schiefe" Toene - da klingt jede Kombination gut.
+// Eine Tonleiter ohne "schiefe" Töne - da klingt jede Kombination gut.
 // (Das ist eine Pentatonik: wie die schwarzen Tasten am Klavier.)
 const PENTA = [293.66, 329.63, 392.0, 440.0, 493.88,
                587.33, 659.25, 783.99, 880.0, 987.77];
@@ -232,11 +232,11 @@ export function klangPlanetTippen(hoehenAnteil = 0.5) {
   const i = Math.max(0, Math.min(PENTA.length - 1,
     Math.round(hoehenAnteil * (PENTA.length - 1))));
   glocke({ hoehe: PENTA[i] * 0.5, dauer: 1.6, laut: 0.1 });
-  // ein tiefer, kurzer "Plopp" dazu - wie wenn man auf einen Kuerbis klopft
+  // ein tiefer, kurzer "Plopp" dazu - wie wenn man auf einen Kürbis klopft
   ton({ hoehe: PENTA[i] * 0.25, dauer: 0.22, form: 'sine', laut: 0.14, gleiten: -30 });
 }
 
-/** Etwas blueht auf: ein aufsteigender Glockenakkord. */
+/** Etwas blüht auf: ein aufsteigender Glockenakkord. */
 export function klangAufbluehen() {
   const stufen = [0, 2, 4, 7];
   stufen.forEach((stufe, i) => {
@@ -249,7 +249,7 @@ export function klangAufbluehen() {
   ton({ hoehe: 110, dauer: 1.8, form: 'sine', laut: 0.1, gleiten: 60 });
 }
 
-/** Ein Apfelbaum wacht auf - groesser und feierlicher. */
+/** Ein Apfelbaum wacht auf - größer und feierlicher. */
 export function klangBaumWaechst() {
   [0, 3, 5, 7, 9].forEach((stufe, i) => {
     glocke({ hoehe: PENTA[stufe], dauer: 2.8, laut: 0.1, verzug: i * 0.16 });
@@ -261,8 +261,8 @@ export function klangBaumWaechst() {
    HINTERGRUNDMUSIK
 
    Die Musik wird nicht abgespielt, sondern in echtzeit gebaut:
-   ein weicher Klangteppich aus langen Toenen, dazu ab und zu ein
-   Glockenton. Weil der Computer die Toene selbst wuerfelt, klingt
+   ein weicher Klangteppich aus langen Tönen, dazu ab und zu ein
+   Glockenton. Weil der Computer die Töne selbst wuerfelt, klingt
    sie jedes Mal ein bisschen anders und wiederholt sich nie.
    ================================================================== */
 
@@ -347,13 +347,13 @@ function planeMusikStueck() {
   akkordNummer++;
   padAkkord(akkord, start, AKKORD_DAUER);
 
-  // zwei bis vier Sterntoene ueber den Akkord verteilt
+  // zwei bis vier Sterntöne über den Akkord verteilt
   const anzahl = 2 + Math.floor(Math.random() * 3);
   for (let i = 0; i < anzahl; i++) {
     sternTon(start + Math.random() * AKKORD_DAUER * 0.9);
   }
 
-  // der naechste Akkord ueberlappt ein bisschen - dann gibt es
+  // der nächste Akkord überlappt ein bisschen - dann gibt es
   // keine Luecke und es klingt wie ein durchgehender Teppich
   musikUhr = setTimeout(planeMusikStueck, (AKKORD_DAUER - 1.6) * 1000);
 }
@@ -407,7 +407,7 @@ export function stoppeMusik() {
        (eine Wolke klingt luftig, ein Baum warm, eine Blume blubbert)
    ================================================================== */
 
-/** Blubbern - fuer die Blubber-Blume, was sonst. */
+/** Blubbern - für die Blubber-Blume, was sonst. */
 function blubber(hoehe, laut = 0.16) {
   const h = starte();
   if (!h || !tonAn) return;
@@ -430,20 +430,20 @@ function blubber(hoehe, laut = 0.16) {
   o.stop(jetzt + 0.5);
 }
 
-/** Ein kurzes Klopfen - fuer Steine. */
+/** Ein kurzes Klopfen - für Steine. */
 function klopfen(hoehe) {
   ton({ hoehe: hoehe * 0.5, dauer: 0.12, form: 'triangle', laut: 0.16, gleiten: -hoehe * 0.2 });
   rauschen({ dauer: 0.09, laut: 0.05, filter: hoehe * 3 });
 }
 
-/** Ein Zwitschern - fuer Tiere. */
+/** Ein Zwitschern - für Tiere. */
 function zwitschern(hoehe) {
   ton({ hoehe: hoehe * 1.6, dauer: 0.1, form: 'sine', laut: 0.12, gleiten: hoehe * 1.2 });
   ton({ hoehe: hoehe * 2.2, dauer: 0.12, form: 'sine', laut: 0.09, verzug: 0.09, gleiten: -hoehe * 0.6 });
 }
 
 /**
- * Der Ton fuer ein angetipptes Ding.
+ * Der Ton für ein angetipptes Ding.
  *   typ           - was es ist ('wolke', 'apfelbaum', ...)
  *   hoehenAnteil  - 0 = unten am Planeten, 1 = oben
  */

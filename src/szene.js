@@ -34,7 +34,7 @@ if (schattenAn) {
 }
 
 /* ---------- Licht ---------- */
-// Weiches Licht von ueberall, damit nichts komplett schwarz ist
+// Weiches Licht von überall, damit nichts komplett schwarz ist
 const umgebung = new THREE.HemisphereLight(0xd8e8ff, 0x8a7550, 1.45);
 szene.add(umgebung);
 
@@ -54,15 +54,15 @@ if (schattenAn) {
 }
 szene.add(sonne);
 
-// Kaltes Gegenlicht von links hinten - macht die Raender huebsch
+// Kaltes Gegenlicht von links hinten - macht die Ränder huebsch
 const gegenlicht = new THREE.DirectionalLight(0x9fb4ff, 0.7);
 gegenlicht.position.set(-4, -1.5, 1.5);
 szene.add(gegenlicht);
 
 /* ---------- Weltraum-Hintergrund ----------
-   Ein echter Nebel aus Blau-, Lila- und Tuerkistoenen.
-   Wichtig: alles bleibt dunkel und zurueckgenommen, damit der
-   Planet die Hauptrolle behaelt.                                    */
+   Ein echter Nebel aus Blau-, Lila- und Tuerkistönen.
+   Wichtig: alles bleibt dunkel und zurückgenommen, damit der
+   Planet die Hauptrolle behält.                                    */
 
 function machHimmelBild() {
   const c = document.createElement('canvas');
@@ -79,14 +79,14 @@ function machHimmelBild() {
   g.fillStyle = grund;
   g.fillRect(0, 0, c.width, c.height);
 
-  /* --- ein Nebelfleck: viele weiche Kreise, die sich ueberlappen --- */
+  /* --- ein Nebelfleck: viele weiche Kreise, die sich überlappen --- */
   function nebel(mitteX, mitteY, weite, farbe, deckkraft, ballen = 14) {
     g.globalCompositeOperation = 'lighter';
     for (let i = 0; i < ballen; i++) {
       const x = mitteX + w(-weite * 0.55, weite * 0.55);
       const y = mitteY + w(-weite * 0.4, weite * 0.4);
       const r = weite * w(0.3, 0.75);
-      // Wolken, die ueber den Rand ragen, auf der anderen Seite
+      // Wolken, die über den Rand ragen, auf der anderen Seite
       // nochmal malen - dann sieht man die Naht der Kugel nicht.
       for (const versatz of [0, -c.width, c.width]) {
         const px = x + versatz;
@@ -103,7 +103,7 @@ function machHimmelBild() {
     }
   }
 
-  /* --- das Nebelband, das sich schraeg ueber den Himmel zieht --- */
+  /* --- das Nebelband, das sich schraeg über den Himmel zieht --- */
   const band = 520;
   nebel(300, band - 60, 330, '38, 60, 155', 0.15);     // tiefes Blau
   nebel(820, band + 70, 280, '88, 46, 145', 0.13);     // Violett
@@ -139,7 +139,7 @@ function machHimmelBild() {
   for (let i = 0; i < 2200; i++) {
     const x = w(0, c.width);
     const y = w(0, c.height);
-    // in der Naehe des Nebelbandes stehen mehr Sterne
+    // in der Nähe des Nebelbandes stehen mehr Sterne
     const naheBand = 1 - Math.min(1, Math.abs(y - band) / 420);
     if (w(0, 1) > 0.25 + naheBand * 0.75) continue;
     const helligkeit = w(0.12, 0.62);
@@ -236,7 +236,7 @@ export function belebeSterne(zeit) {
   });
 }
 
-/* ---------- Fenstergroesse ---------- */
+/* ---------- Fenstergröße ---------- */
 export function passeGroesseAn() {
   const b = window.innerWidth;
   const h = window.innerHeight;

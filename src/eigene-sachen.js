@@ -14,7 +14,7 @@
 
    3. ORDNER meine-sachen/
       Datei dort ablegen und in meine-sachen/liste.json eintragen.
-      Dann gehoert sie fest zum Spiel - auch fuer alle anderen.
+      Dann gehört sie fest zum Spiel - auch für alle anderen.
    ================================================================== */
 
 import * as THREE from 'three';
@@ -35,8 +35,8 @@ function ladeGlb(quelle) {
 
 /**
  * Open-Brush-Zeichnungen sind riesig und stehen irgendwo im Raum.
- * Hier werden sie auf eine gute Groesse gebracht und so verschoben,
- * dass sie mit den Fuessen auf dem Boden stehen.
+ * Hier werden sie auf eine gute Größe gebracht und so verschoben,
+ * dass sie mit den Füßen auf dem Boden stehen.
  */
 function machePassend(modell, zielHoehe = 0.55) {
   /* Open-Brush-Zeichnungen brauchen eine kleine Kur, damit sie hier
@@ -45,8 +45,8 @@ function machePassend(modell, zielHoehe = 0.55) {
      - metalness: glTF sagt standardmaessig "das ist Metall". Ohne eine
        Spiegel-Umgebung wird Metall aber pechschwarz. Also: kein Metall.
      - schwarze Grundfarbe: manche Pinsel bringen color = schwarz mit.
-       Weil die echte Farbe in den Ecken (vertex colors) steckt, wuerde
-       schwarz alles ausloeschen. Also auf weiss setzen.
+       Weil die echte Farbe in den Ecken (vertex colors) steckt, würde
+       schwarz alles auslöschen. Also auf weiß setzen.
      - beide Seiten sichtbar, weil Pinselstriche papierdünn sind.        */
   modell.traverse((teil) => {
     if (!teil.isMesh) return;
@@ -68,9 +68,9 @@ function machePassend(modell, zielHoehe = 0.55) {
       if (m.transparent) {
         m.depthWrite = false;
         m.side = THREE.DoubleSide;
-        if (m.opacity < 0.15) m.opacity = 0.4;   // ganz unsichtbar waere schade
+        if (m.opacity < 0.15) m.opacity = 0.4;   // ganz unsichtbar wäre schade
       }
-      // schwarze Grundfarbe wuerde die Eckenfarben ausloeschen
+      // schwarze Grundfarbe würde die Eckenfarben auslöschen
       if (hatEckenFarben && m.color) {
         const helligkeit = m.color.r + m.color.g + m.color.b;
         if (helligkeit < 0.12) m.color.setRGB(1, 1, 1);
@@ -83,14 +83,72 @@ function machePassend(modell, zielHoehe = 0.55) {
     }
   });
 
-  const kasten = new THREE.Box3().setFromObject(modell);
+  /* ------------------------------------------------------------------
+     VERIRRTE STRICHE AUSSORTIEREN
+
+     Beim Malen in VR bleibt schnell mal ein Strich weit weg vom Rest
+     hängen - ein Ausrutscher, ein Punkt hinter dir. Man sieht ihn in
+     der Brille kaum, aber er macht die "Kiste" um die Zeichnung
+     riesig. Folge: die Zeichnung wird viel zu klein gerechnet und
+     sitzt nicht mehr in der Mitte.
+
+     Darum messen wir robust: wir schauen uns viele Punkte der
+     Zeichnung an und lassen die äußersten 4 Prozent weg. Was dann
+     übrig bleibt, ist das, was man wirklich gemalt hat.
+     ------------------------------------------------------------------ */
+  const proben = [];
+  modell.updateMatrixWorld(true);
+  modell.traverse((teil) => {
+    if (!teil.isMesh || !teil.geometry || !teil.geometry.attributes.position) return;
+    const pos = teil.geometry.attributes.position;
+    const schritt = Math.max(1, Math.floor(pos.count / 500));
+    const punkt = new THREE.Vector3();
+    for (let i = 0; i < pos.count; i += schritt) {
+      punkt.fromBufferAttribute(pos, i);
+      teil.localToWorld(punkt);
+      proben.push(punkt.clone());
+    }
+  });
+
+  const kasten = new THREE.Box3();
+  if (proben.length > 20) {
+    // Mittelpunkt aller Proben
+    const mitte = new THREE.Vector3();
+    for (const p of proben) mitte.add(p);
+    mitte.divideScalar(proben.length);
+
+    // Entfernungen sortieren und die äußersten 4% weglassen
+    const entfernungen = proben.map((p) => p.distanceTo(mitte)).sort((a, b) => a - b);
+    const grenze = entfernungen[Math.floor(entfernungen.length * 0.96)] || 1;
+
+    for (const p of proben) {
+      if (p.distanceTo(mitte) <= grenze * 1.02) kasten.expandByPoint(p);
+    }
+
+    // Meshes, die komplett weit draußen liegen, sind Ausrutscher -
+    // die blenden wir aus.
+    const weitDraussen = grenze * 1.9;
+    modell.traverse((teil) => {
+      if (!teil.isMesh || !teil.geometry) return;
+      if (!teil.geometry.boundingSphere) teil.geometry.computeBoundingSphere();
+      const kugel = teil.geometry.boundingSphere;
+      if (!kugel) return;
+      const ort = kugel.center.clone();
+      teil.localToWorld(ort);
+      if (ort.distanceTo(mitte) - kugel.radius > weitDraussen) {
+        teil.visible = false;
+      }
+    });
+  }
+  if (kasten.isEmpty()) kasten.setFromObject(modell);
+
   const groesse = kasten.getSize(new THREE.Vector3());
   const groesste = Math.max(groesse.x, groesse.y, groesse.z) || 1;
 
-  /* Wir messen die HOEHE, nicht die Breite: sonst wuerde eine breit
+  /* Wir messen die HOEHE, nicht die Breite: sonst würde eine breit
      gemalte Blume ganz flach und winzig auf dem Planeten stehen.
      Bei sehr flachen Sachen (einem Teppich zum Beispiel) nehmen wir
-     einen Teil der Gesamtgroesse, damit sie nicht riesig werden.     */
+     einen Teil der Gesamtgröße, damit sie nicht riesig werden.     */
   const bezug = Math.max(groesse.y, groesste * 0.42);
   const faktor = zielHoehe / bezug;
 
@@ -104,6 +162,13 @@ function machePassend(modell, zielHoehe = 0.55) {
   huelle.userData.typ = 'eigene-zeichnung';
   huelle.userData.antippbar = true;
   huelle.userData.hoehe = zielHoehe;
+  // Die echten Masse merken (bei voller Groesse). Sonst misst man
+  // aus Versehen ein Modell, das gerade erst herauswaechst.
+  huelle.userData.masse = {
+    x: groesse.x * faktor,
+    y: groesse.y * faktor,
+    z: groesse.z * faktor,
+  };
   huelle.userData.belebe = (zeit) => {
     // schwebt und dreht sich ganz sanft, damit man sie von allen Seiten sieht
     huelle.rotation.y = Math.sin(zeit * 0.25) * 0.3;
@@ -162,7 +227,7 @@ export async function sucheAufIcosa(name) {
   return (daten.assets || []).map(machEintrag).filter((e) => e.glb);
 }
 
-/** Holt eine einzelne Skizze ueber ihre Nummer */
+/** Holt eine einzelne Skizze über ihre Nummer */
 export async function holeVonIcosa(id) {
   const antwort = await fetch(`${ICOSA}/assets/${encodeURIComponent(id)}`);
   if (!antwort.ok) throw new Error('Diese Nummer gibt es nicht (' + antwort.status + ')');
@@ -185,7 +250,7 @@ function machEintrag(asset) {
 }
 
 /* ================================================================
-   BEIM START: alles laden, was zur Welt gehoert
+   BEIM START: alles laden, was zur Welt gehört
    ================================================================ */
 export async function holeEigeneSachen(spiel) {
   bauePanel(spiel);
@@ -309,7 +374,7 @@ function bauePanel(spiel) {
   panel.querySelector('.panel-los').addEventListener('click', suchen);
   feld.addEventListener('keydown', (e) => { if (e.key === 'Enter') suchen(); });
 
-  /* --- ueber die Nummer holen --- */
+  /* --- über die Nummer holen --- */
   async function holen() {
     const id = nummernFeld.value.trim();
     if (!id) return;
@@ -387,9 +452,9 @@ function macheZiehenUndFallen(spiel) {
 /* ==================================================================
    VORLAGEN
 
-   Manche Zeichnungen gehoeren fest zum Spiel und werden viele Male
-   gebraucht (zum Beispiel die Blubber-Blume, die beim Giessen
-   waechst). Die laden wir einmal und machen dann Kopien davon -
+   Manche Zeichnungen gehören fest zum Spiel und werden viele Male
+   gebraucht (zum Beispiel die Blubber-Blume, die beim Gießen
+   wächst). Die laden wir einmal und machen dann Kopien davon -
    das ist viel schneller, als sie jedes Mal neu zu laden.
    ================================================================== */
 
@@ -409,6 +474,7 @@ export async function ladeVorlage(pfad, hoehe = 0.5) {
     };
     kopie.userData.phase = Math.random() * 6.28;
     kopie.userData.groesse = 1;
+    kopie.userData.masse = vorlage.userData.masse;
     return kopie;
   };
 }

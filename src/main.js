@@ -3,7 +3,7 @@
 
    Hier wird alles zusammengesetzt:
    die Buehne, der Planet, der Mond - und die Bausteine, mit denen
-   die Geschichte in geschichte.js erzaehlt wird.
+   die Geschichte in geschichte.js erzählt wird.
    ================================================================== */
 
 import * as THREE from 'three';
@@ -24,7 +24,7 @@ import { holeEigeneSachen, ladeVorlage } from './eigene-sachen.js';
 /* ---------- welche Bilder brauchen wir? ---------- */
 const BILDER = [
   'blatt-1', 'blatt-2', 'blatt-3', 'blatt-klein', 'halm', 'halm-breit',
-  'blueten-blatt', 'klecks', 'streifen', 'auge', 'pupille', 'braue',
+  'blüten-blatt', 'klecks', 'streifen', 'auge', 'pupille', 'braue',
   'mund-laecheln', 'mund-o', 'mund-traurig', 'wange', 'fluegel-oben',
   'fluegel-unten', 'ohr', 'tropfen', 'funke', 'glanz', 'krater',
 ];
@@ -51,8 +51,8 @@ async function los() {
   glanz.material.blending = THREE.AdditiveBlending;
   glanz.material.depthWrite = false;
   glanz.material.opacity = 0.95;
-  // Der Lichtschein ist viel groesser als der Punkt selbst. Wuerde er
-  // Fingertipps abfangen, koennte man den Mond dahinter nicht antippen.
+  // Der Lichtschein ist viel größer als der Punkt selbst. Wuerde er
+  // Fingertipps abfangen, könnte man den Mond dahinter nicht antippen.
   glanz.raycast = () => {};
   kern.add(glanz);
 
@@ -76,13 +76,13 @@ async function los() {
     winkel: 0,
     neigung: 0.5,
     geschwindigkeit: 0.15,
-    erzaehlNaehe: 0,     // 0 = normale Bahn, 1 = kommt zum Erzaehlen naeher
+    erzaehlNaehe: 0,     // 0 = normale Bahn, 1 = kommt zum Erzählen näher
   };
 
   /* ---------- DER BLICK: wo ist die Kamera, wohin schaut sie? ----------
-     Die Kamera haengt an einem unsichtbaren Faden um den Planeten.
+     Die Kamera hängt an einem unsichtbaren Faden um den Planeten.
      "seite" und "hoch" sind die Winkel, "abstand" die Entfernung.
-     Beim Wischen aendern sich die Winkel - dadurch fliegt die Kamera
+     Beim Wischen ändern sich die Winkel - dadurch fliegt die Kamera
      um den Planeten herum und die Sterne ziehen vorbei.               */
   const blick = {
     seite: 0,
@@ -91,7 +91,8 @@ async function los() {
     zielAbstand: 4.6,
     schwungSeite: 0,
     schwungHoch: 0,
-    griffRadius: 0.7,   // wie gross der Planet gerade ist (fuer 1:1-Gefuehl)
+    griffRadius: 0.7,   // wie groß der Planet gerade ist (für 1:1-Gefuehl)
+    zoom: 1,            // 1 = normal, kleiner = näher dran
     ziel: new THREE.Vector3(0, 0, 0),        // wohin die Kamera schaut
     zielZiel: new THREE.Vector3(0, 0, 0),    // wohin sie schauen soll
     schautZuLunix: false,
@@ -115,20 +116,20 @@ async function los() {
   /* ================================================================
      DEINE SELBST GEMALTEN SACHEN (aus Open Brush)
 
-     Alle deine Zeichnungen zusammen sind ueber 20 MB gross. Wuerden
-     wir sie alle beim Start laden, muesste man auf dem Handy lange
+     Alle deine Zeichnungen zusammen sind über 20 MB groß. Wuerden
+     wir sie alle beim Start laden, müsste man auf dem Handy lange
      warten. Darum:
 
        - das Gras kommt im Hintergrund gleich mit (das braucht man
          schon im zweiten Kapitel)
        - alles andere wird erst geholt, wenn die Geschichte es braucht
 
-     Fehlt eine Datei, laeuft das Spiel einfach mit den
+     Fehlt eine Datei, läuft das Spiel einfach mit den
      Papier-Bastelmodellen weiter.
      ================================================================ */
-  // Die zweite Zahl ist die Hoehe auf dem Planeten.
+  // Die zweite Zahl ist die Höhe auf dem Planeten.
   // Vertrocknet ist absichtlich viel kleiner als gesund - dann sieht
-  // man beim Giessen richtig, wie es aufwaechst.
+  // man beim Gießen richtig, wie es aufwächst.
   const DATEIEN = {
     grasTrocken:  ['meine-sachen/gras-trocken.glb', 0.13],
     grasGesund:   ['meine-sachen/gras-gesund.glb', 0.27],
@@ -136,7 +137,7 @@ async function los() {
     blumeGesund:  ['meine-sachen/blubber-blume.glb', 0.48],
     baumTrocken:  ['meine-sachen/apfelbaum-trocken.glb', 0.5],
     baumGesund:   ['meine-sachen/apfelbaum.glb', 1.2],
-    seeVoll:      ['meine-sachen/see-voll.glb', 0.55],
+    seeVoll:      ['meine-sachen/see-voll.glb', 0.5],
     seeLeer:      ['meine-sachen/see-leer.glb', 0.5],
   };
 
@@ -172,7 +173,7 @@ async function los() {
 
   let trockeneBlumenGewuenscht = false;
 
-  /* --- Ein Grasbueschel bauen: deine Zeichnung, wenn sie schon da ist --- */
+  /* --- Ein Grasbüschel bauen: deine Zeichnung, wenn sie schon da ist --- */
   function machGras(trocken, startzahl) {
     const fabrik = trocken ? eigene.grasTrocken : eigene.grasGesund;
     if (fabrik) {
@@ -277,8 +278,8 @@ async function los() {
   }
 
   /* --- PAUSE ZUM UMSEHEN -------------------------------------------
-     Nach einem schoenen Moment: in Ruhe umschauen, herumfliegen,
-     Toene spielen. Weiter geht es erst, wenn man den weiter-Knopf
+     Nach einem schönen Moment: in Ruhe umschauen, herumfliegen,
+     Töne spielen. Weiter geht es erst, wenn man den weiter-Knopf
      oder Lunix antippt.                                            */
   function warteAufUmsehen(hinweis = 'schau dich ruhig um') {
     return new Promise((fertig) => {
@@ -319,7 +320,7 @@ async function los() {
   const warte = (sekunden) => new Promise((f) => setTimeout(f, sekunden * 1000));
 
   /* --- Warte, bis etwas Bestimmtes passiert ist.
-         Waehrend dieser Zeit darf man frei spielen (giessen, pflanzen). --- */
+         Während dieser Zeit darf man frei spielen (gießen, pflanzen). --- */
   function warteBis(bedingung, hinweis) {
     ui.zeigeHinweis(hinweis || '');
     return new Promise((fertig) => {
@@ -353,7 +354,7 @@ async function los() {
     klang.klangWachsen();
   }
 
-  /* --- Die Welt wird ein Stueck groesser --- */
+  /* --- Die Welt wird ein Stück größer --- */
   function lasseWeltWachsen(um = 0.075) {
     planet.wachseAuf(planet.zielRadius + um);
     klang.klangWachsen();
@@ -362,10 +363,10 @@ async function los() {
   }
 
   /* --- GUTE TATEN ---------------------------------------------------
-     Jedes Giessen und jedes Pflanzen ist eine gute Tat. Nach jeder
-     vierten waechst der Planet ein Stueck weiter - dann hat man
-     wieder Platz fuer Neues und kann immer weitermachen.
-     Je groesser er schon ist, desto gemuetlicher waechst er.       */
+     Jedes Gießen und jedes Pflanzen ist eine gute Tat. Nach jeder
+     vierten wächst der Planet ein Stück weiter - dann hat man
+     wieder Platz für Neues und kann immer weitermachen.
+     Je größer er schon ist, desto gemütlicher wächst er.       */
   function guteTat() {
     zustand.guteTaten = (zustand.guteTaten || 0) + 1;
     if (zustand.guteTaten % 4 !== 0) { speichere(); return; }
@@ -377,7 +378,7 @@ async function los() {
     ui.zeigeHinweis('Der Planet ist gewachsen! Jetzt ist wieder Platz.');
     setTimeout(() => ui.zeigeHinweis(''), 3500);
 
-    // Bei jedem zweiten Wachstumsschritt kommt ein neues Stueck
+    // Bei jedem zweiten Wachstumsschritt kommt ein neues Stück
     // Planet zum Vorschein - zum Beispiel ein See.
     const wachstumsSchritt = zustand.guteTaten / 4;
     if (wachstumsSchritt % 2 === 0) {
@@ -422,12 +423,12 @@ async function los() {
       // Musik anwerfen (passiert nur beim ersten Mal etwas)
       if (!zustand.schlaeft) klang.starteMusik();
       if (!wartendeAufgabe) {
-        // freies Spiel: giessen oder pflanzen, wenn ein Werkzeug in der Hand ist
+        // freies Spiel: gießen oder pflanzen, wenn ein Werkzeug in der Hand ist
         freiesSpiel(treffer, x, y);
         return;
       }
       // Der Mond redet: einmal tippen schreibt den Satz fertig,
-      // nochmal tippen bringt den naechsten. Man darf dafuer ueberall
+      // nochmal tippen bringt den nächsten. Man darf dafür überall
       // hintippen, nicht nur genau auf die Blase.
       if (wartendeAufgabe.art === 'blase') {
         wartendeAufgabe.weiter();
@@ -440,8 +441,8 @@ async function los() {
           wartendeAufgabe.treffer(treffer);
         } else {
           // Etwas anderes angetippt: das darf ruhig passieren!
-          // So kann man waehrend des Suchens weitergiessen und
-          // Toene auf dem Planeten spielen.
+          // So kann man während des Suchens weitergießen und
+          // Töne auf dem Planeten spielen.
           freiesSpiel(treffer, x, y);
         }
       }
@@ -460,7 +461,7 @@ async function los() {
     },
   });
 
-  // Ein Klick direkt auf die Sprechblase blaettert auch weiter
+  // Ein Klick direkt auf die Sprechblase blättert auch weiter
   ui.blaseAngetippt(() => {
     if (wartendeAufgabe && wartendeAufgabe.art === 'blase') wartendeAufgabe.weiter();
   });
@@ -471,27 +472,27 @@ async function los() {
   kernKugel.userData.typ = 'kern';
 
   /* ================================================================
-     FREIES SPIEL - giessen und pflanzen, wann man will
+     FREIES SPIEL - gießen und pflanzen, wann man will
      ================================================================ */
   function freiesSpiel(treffer, x, y) {
     if (!treffer) return;
     const werkzeug = ui.werkzeugInDerHand();
     const typ = treffer.ding.userData.typ;
 
-    // Mit der Giesskanne in der Hand kann man ueberall giessen -
-    // auf den Boden, auf Gras, auf Blumen, auf Baeume.
+    // Mit der Gießkanne in der Hand kann man überall gießen -
+    // auf den Boden, auf Gras, auf Blumen, auf Bäume.
     if (werkzeug === 'giesskanne') {
       giesseAn(treffer);
       return;
     }
-    // Mit der Samentuete pflanzt man - auch wenn der Magnet gerade
-    // ein Ding in der Naehe vorgeschlagen hat.
+    // Mit der Samentüte pflanzt man - auch wenn der Magnet gerade
+    // ein Ding in der Nähe vorgeschlagen hat.
     if (werkzeug === 'samentuete' && (typ === 'boden' || treffer.ueberMagnet)) {
       pflanzeBlumeAn(treffer);
       return;
     }
     if (typ === 'apfelbaum-trocken') {
-      ui.zeigeHinweis('der Baum braucht Wasser - nimm die Giesskanne');
+      ui.zeigeHinweis('der Baum braucht Wasser - nimm die Gießkanne');
       setTimeout(() => ui.zeigeHinweis(''), 2500);
       return;
     }
@@ -506,7 +507,7 @@ async function los() {
     }
 
     /* ---------- ALLES KLINGT ----------
-       Jedes Ding hat seinen eigenen Klang, und die Tonhoehe haengt
+       Jedes Ding hat seinen eigenen Klang, und die Tonhoehe hängt
        davon ab, wo es auf dem Planeten steht: oben hell, unten tief.
        So kann man sich eigene Melodien spielen.                     */
     const lokal = planet.gruppe.worldToLocal(treffer.punkt.clone()).normalize();
@@ -525,12 +526,12 @@ async function los() {
     // Ein vertrocknetes Ding sagt ausserdem, was es braucht
     if (typ === 'blubber-trocken' || typ === 'apfelbaum-trocken' || typ === 'gras-trocken') {
       if (!ui.hatWerkzeug('giesskanne')) return;
-      ui.zeigeHinweis('nimm die Giesskanne, dann kannst du es giessen');
+      ui.zeigeHinweis('nimm die Gießkanne, dann kannst du es gießen');
       setTimeout(() => ui.zeigeHinweis(''), 2500);
     }
   }
 
-  /* --- Giessen --- */
+  /* --- Gießen --- */
   function giesseAn(treffer) {
     // Der Punkt kann vom Boden kommen oder von einem Ding darauf -
     // beides ergibt eine Richtung auf der Planetenkugel.
@@ -545,17 +546,17 @@ async function los() {
     const trockene = planet.aufgestellt.filter((o) =>
       o.userData.typ === 'gras-trocken' && o.userData.richtung.distanceTo(lokal) < 0.36);
     for (const alt of trockene) tauscheGrasAus(alt);
-    // ein leerer See fuellt sich mit Wasser
+    // ein leerer See füllt sich mit Wasser
     const leereSeen = planet.aufgestellt.filter((o) =>
       o.userData.typ === 'see-leer' && o.userData.richtung.distanceTo(lokal) < 0.5);
     for (const see of leereSeen) fuelleSee(see);
 
-    // vertrocknete Apfelbaeume werden wieder gruen
+    // vertrocknete Apfelbäume werden wieder grün
     const welkeBaeume = planet.aufgestellt.filter((o) =>
       o.userData.typ === 'apfelbaum-trocken' && o.userData.richtung.distanceTo(lokal) < 0.45);
     for (const b of welkeBaeume) verwandleBaum(b);
 
-    // vertrocknete Blubber-Blumen bluehen wieder auf
+    // vertrocknete Blubber-Blumen blühen wieder auf
     const welke = planet.aufgestellt.filter((o) =>
       o.userData.typ === 'blubber-trocken' && o.userData.richtung.distanceTo(lokal) < 0.4);
     for (const w of welke) verwandleBlume(w);
@@ -569,8 +570,8 @@ async function los() {
     speichere();
   }
 
-  /* Aus vertrocknetem Gras wird gesundes. Weil das gesunde Bueschel
-     groesser ist, waechst es beim Giessen sichtbar auf. */
+  /* Aus vertrocknetem Gras wird gesundes. Weil das gesunde Büschel
+     größer ist, wächst es beim Gießen sichtbar auf. */
   function tauscheGrasAus(altesGras) {
     const richtung = altesGras.userData.richtung.clone();
     const drehung = altesGras.userData.eigenDrehung || 0;
@@ -621,41 +622,92 @@ async function los() {
   }
 
   /* ---------- SEEN ----------
-     Wenn der Planet waechst, kommt Platz fuer einen See zum
-     Vorschein. Die Datei ist gross, darum wird sie erst geholt,
+     Wenn der Planet wächst, kommt Platz für einen See zum
+     Vorschein. Die Datei ist groß, darum wird sie erst geholt,
      wenn sie wirklich gebraucht wird.                              */
   const SEE_ORTE = [
     [0.62, 0.2, 0.75], [-0.55, -0.45, 0.7], [0.1, 0.75, -0.65],
   ];
   let seenAufgestellt = 0;
 
+  /* Ein See liegt IM Boden, nicht darauf. Diese Funktion rechnet aus,
+     wie tief er versenkt werden muss, damit nur der Rand herausschaut. */
+  /* Wie tief ein See im Boden steckt.
+     Fest eingestellt, nicht gemessen - denn der leere und der volle
+     See sind unterschiedlich gross gemalt. Wuerde man messen, wuerde
+     der See beim Auffuellen auf einmal tiefer oder hoeher sitzen.  */
+  const SEE_TIEFE = 0.12;      // ein bisschen zusaetzlich, damit das
+                               // Ufer wirklich im Boden steckt
+
+  /** Wie breit ein Ding ist - dafuer, dass es passend versenkt wird. */
+  function breiteVon(objekt) {
+    const m = objekt.userData.masse;
+    return m ? Math.max(m.x, m.z) : (objekt.userData.hoehe || 0.5) * 2;
+  }
+
+  /* Ein See soll ruhig daliegen und nicht wabern wie eine Blume. */
+  function machRuhig(objekt) {
+    objekt.userData.belebe = null;
+    objekt.rotation.z = 0;
+    objekt.rotation.x = 0;
+  }
+
+  /* Ein See braucht einen Planeten, der schon eine Weile gewachsen
+     ist. Auf einer kleinen Kugel würde ein flacher See abstehen wie
+     ein Brett - auf einer großen ist die Rundung so sanft, dass er
+     sich einfügt. Genau wie ein See auf der Erde: die ist so groß,
+     dass man von ihrer Rundung nichts merkt.                        */
+  const PLANET_GROSS_GENUG = 1.55;
+
   async function lassSeeErscheinen(mitFunken = true) {
     if (seenAufgestellt >= SEE_ORTE.length) return null;
+    if (planet.zielRadius < PLANET_GROSS_GENUG) {
+      // noch zu klein - der See kommt beim nächsten Mal
+      return null;
+    }
     const nummer = seenAufgestellt;
     seenAufgestellt++;
 
-    if (mitFunken) {
-      ui.zeigeHinweis('Da sammelt sich Wasser ...');
-    }
-    // erst den leeren See versuchen, sonst gleich den vollen
+    if (mitFunken) ui.zeigeHinweis('Der Planet macht Platz für etwas Großes ...');
+
+    // erst den vertrockneten See versuchen, sonst gleich den vollen
     const fabrik = (await holeVorlage('seeLeer')) || (await holeVorlage('seeVoll'));
     if (!fabrik) { seenAufgestellt--; ui.zeigeHinweis(''); return null; }
     const leerVorhanden = !!eigene.seeLeer;
 
+    // Ein See braucht viel Platz - darum wächst der Planet dafür
+    // extra ein ordentliches Stück.
+    planet.wachseAuf(planet.zielRadius + 0.3);
+
     const see = fabrik();
     see.userData.typ = leerVorhanden ? 'see-leer' : 'see';
     see.userData.antippbar = true;
+    machRuhig(see);
     see.scale.setScalar(0.04);
     const richtung = new THREE.Vector3(...SEE_ORTE[nummer]).normalize();
-    planet.stelleAuf(see, richtung, { einsinken: 0.05, drehung: nummer * 1.7 });
-    lassWachsen(see, 1, 1.8);
-    planet.maleGruen(richtung, 0.45, 0.8);
+
+    // Der Planet macht an dieser Stelle eine ebene Fläche - so wie
+    // ein Tisch, auf den der See genau passt.
+    planet.macheFlacheStelle(richtung, breiteVon(see) * 1.1);
+
+    planet.stelleAuf(see, richtung, {
+      einsinken: 0,
+      einsinkenAbsolut: SEE_TIEFE,
+      drehung: nummer * 1.7,
+    });
+    lassWachsen(see, 1, 2);
+    planet.maleGruen(richtung, 0.55, 0.85);
     if (mitFunken) {
       klang.klangWachsen();
-      funkeBei(see.getWorldPosition(new THREE.Vector3()), 10);
-      ui.zeigeHinweis('');
+      funkeBei(see.getWorldPosition(new THREE.Vector3()), 12);
+      setTimeout(() => {
+        ui.zeigeHinweis(leerVorhanden
+          ? 'Ein ausgetrockneter See! Gieß ihn voll.'
+          : 'Ein See ist entstanden!');
+        setTimeout(() => ui.zeigeHinweis(''), 4000);
+      }, 1200);
     }
-    // die gefuellte Fassung schon mal vorbereiten
+    // die gefüllte Fassung schon mal vorbereiten
     if (leerVorhanden) holeVorlage('seeVoll');
     return see;
   }
@@ -675,8 +727,13 @@ async function los() {
     const voll = fabrik();
     voll.userData.typ = 'see';
     voll.userData.antippbar = true;
-    voll.scale.setScalar(0.3);
-    planet.stelleAuf(voll, richtung, { einsinken: 0.05, drehung });
+    machRuhig(voll);
+    voll.scale.setScalar(0.85);          // er ist ja schon da, er füllt sich nur
+    planet.stelleAuf(voll, richtung, {
+      einsinken: 0,
+      einsinkenAbsolut: SEE_TIEFE,
+      drehung,
+    });
     lassWachsen(voll, 1, 1.6);
     klang.klangGiessen();
     klang.klangAufbluehen();
@@ -695,7 +752,7 @@ async function los() {
     return planet.gruppe.worldToLocal(weg).normalize();
   }
 
-  /* --- Die vertrockneten Apfelbaeume kommen zum Vorschein --- */
+  /* --- Die vertrockneten Apfelbäume kommen zum Vorschein --- */
   const BAUM_ORTE = [
     [-0.45, 0.5, 0.74], [0.72, 0.42, -0.55], [-0.3, -0.62, -0.72],
   ];
@@ -716,7 +773,7 @@ async function los() {
       funkeBei(baum.getWorldPosition(new THREE.Vector3()), 6);
     });
     klang.klangFunke();
-    // die gruene Version schon mal im Hintergrund holen
+    // die grüne Version schon mal im Hintergrund holen
     holeVorlage('baumGesund');
   }
 
@@ -744,7 +801,7 @@ async function los() {
     return neu;
   }
 
-  /* --- Aus vertrocknet wird aufgebluecht --- */
+  /* --- Aus vertrocknet wird aufgeblüht --- */
   function verwandleBlume(alteBlume) {
     const richtung = alteBlume.userData.richtung.clone();
     const drehung = alteBlume.userData.eigenDrehung || 0;
@@ -761,7 +818,7 @@ async function los() {
     return neue;
   }
 
-  /* --- Die selbst gemalte Blubber-Blume waechst aus dem nassen Boden --- */
+  /* --- Die selbst gemalte Blubber-Blume wächst aus dem nassen Boden --- */
   function pflanzeBlubberBlume(lokaleRichtung) {
     if (!eigene.blumeGesund) return null;
     // ein bisschen neben die Stelle, damit sie nicht im Gras steckt
@@ -786,7 +843,7 @@ async function los() {
   }
 
   function pflanzeSeerose(lokaleRichtung) {
-    const sorten = ['weiss', 'rosa', 'gelb'];
+    const sorten = ['weiß', 'rosa', 'gelb'];
     const rose = baueSeerose({
       groesse: 1.35,
       sorte: sorten[Math.floor(wuerfel(0, sorten.length))],
@@ -797,7 +854,14 @@ async function los() {
       .add(new THREE.Vector3(wuerfel(-0.06, 0.06), wuerfel(-0.06, 0.06), wuerfel(-0.06, 0.06)))
       .normalize();
     rose.scale.setScalar(0.05);
-    planet.stelleAuf(rose, ort, { einsinken: 0.035, drehung: wuerfel(0, 6.28) });
+    // die Seerose schwimmt auf dem Wasser - also etwas tiefer als der Rand
+    // Die Seerose schwimmt auf dem Wasser - also genauso tief wie
+    // der See, auf dem sie liegt.
+    planet.stelleAuf(rose, ort, {
+      einsinken: 0,
+      einsinkenAbsolut: SEE_TIEFE * 0.5,
+      drehung: wuerfel(0, 6.28),
+    });
     lassWachsen(rose, 1, 1.2);
     klang.klangPlopp();
     klang.klangAufbluehen();
@@ -810,7 +874,7 @@ async function los() {
   function pflanzeBlumeAn(treffer) {
     const lokal = planet.gruppe.worldToLocal(treffer.punkt.clone()).normalize();
 
-    // Auf dem Wasser waechst keine normale Blume - da wird es eine Seerose
+    // Auf dem Wasser wächst keine normale Blume - da wird es eine Seerose
     if (istAufDemSee(lokal)) {
       pflanzeSeerose(lokal);
       return;
@@ -842,13 +906,13 @@ async function los() {
     guteTat();
   }
 
-  /* --- etwas waechst aus dem Boden --- */
+  /* --- etwas wächst aus dem Boden --- */
   const wachsende = [];
   function lassWachsen(objekt, zielGroesse = 1, dauer = 1) {
     wachsende.push({ objekt, ziel: zielGroesse, zeit: 0, dauer });
   }
 
-  /* --- Regentropfen beim Giessen --- */
+  /* --- Regentropfen beim Gießen --- */
   const tropfenFlug = [];
   function macheRegenTropfen(weltOrt) {
     for (let i = 0; i < 7; i++) {
@@ -864,11 +928,11 @@ async function los() {
 
   /* --- Mit dem Mond plaudern (im freien Spiel) --- */
   const mondSprueche = [
-    'Schau nur, wie gruen es geworden ist. Das hast du gemacht.',
-    'Manchmal setze ich mich einfach hin und schaue zu, wie es waechst.',
-    'Weisst du was? Der Planet summt jetzt manchmal. Ganz leise.',
+    'Schau nur, wie grün es geworden ist. Das hast du gemacht.',
+    'Manchmal setze ich mich einfach hin und schaue zu, wie es wächst.',
+    'Weißt du was? Der Planet summt jetzt manchmal. Ganz leise.',
     'Ich bin froh, dass du da bist.',
-    'Wenn du willst, giesse noch ein bisschen. Er mag das sehr.',
+    'Wenn du willst, gieße noch ein bisschen. Er mag das sehr.',
   ];
   let spruchNummer = 0;
   async function plaudereMitDemMond() {
@@ -968,7 +1032,7 @@ async function los() {
     glanz.material.opacity = zustand.schlaeft ? 0.95 : Math.max(0, 0.5 - planet.radius * 0.5);
 
     /* --- Lunix zieht seine Bahn um den Planeten ---
-       Beim Erzaehlen kommt er ein Stueck naeher und hoeher, damit er
+       Beim Erzählen kommt er ein Stück näher und höher, damit er
        nicht hinter dem Planeten verschwindet.                      */
     mondBahn.winkel += schritt * mondBahn.geschwindigkeit;
     {
@@ -992,7 +1056,7 @@ async function los() {
            wieder runter auf die Welt.                              --- */
     if (blick.schautZuLunix) {
       // Der Blick geht auf einen Punkt zwischen Planet und Lunix -
-      // aber naeher am Planeten, damit die Welt die Hauptrolle behaelt.
+      // aber näher am Planeten, damit die Welt die Hauptrolle behält.
       blick.zielZiel.copy(mond.position).multiplyScalar(0.5);
       blick.zielAbstand = 2.9 + planet.radius * 2.4 + mond.position.length() * 0.7;
 
@@ -1006,13 +1070,16 @@ async function los() {
 
       const laenge = mond.position.length() || 1;
       const mondHoch = Math.asin(THREE.MathUtils.clamp(mond.position.y / laenge, -1, 1));
-      // Die Kamera hebt sich fast auf Lunix' Hoehe. Dadurch steht er
-      // ungefaehr in der Bildmitte - und ueber ihm ist Platz fuer die
+      // Die Kamera hebt sich fast auf Lunix' Höhe. Dadurch steht er
+      // ungefaehr in der Bildmitte - und über ihm ist Platz für die
       // Sprechblase, statt dass sie ihn verdeckt.
       blick.hoch += (mondHoch * 0.75 + 0.04 - blick.hoch) * (1 - Math.pow(0.4, schritt));
     } else {
       blick.zielZiel.set(0, 0, 0);
-      blick.zielAbstand = zustand.schlaeft ? 4.6 : 2.15 + planet.radius * 2.6;
+      const normal = zustand.schlaeft ? 4.6 : 2.15 + planet.radius * 2.6;
+      // Der Zoom des Spielers - aber nie so nah, dass die Kamera
+      // im Planeten steckt.
+      blick.zielAbstand = Math.max(planet.radius + 0.75, normal * blick.zoom);
     }
     blick.ziel.lerp(blick.zielZiel, 1 - Math.pow(0.01, schritt));
     blick.abstand = THREE.MathUtils.lerp(blick.abstand, blick.zielAbstand,

@@ -1,12 +1,12 @@
 /* ==================================================================
-   SCHNIPSEL - der Baukasten fuer alles in dieser Welt.
+   SCHNIPSEL - der Baukasten für alles in dieser Welt.
 
    Jedes Ding im Spiel (Baum, Blume, Mond, Schmetterling) ist aus
    vielen kleinen Papier-Schnipseln zusammengeklebt - genau wie ein
-   Basteltier aus ausgeschnittenen Pappstuecken.
+   Basteltier aus ausgeschnittenen Pappstücken.
 
    Ein Schnipsel ist:
-     - ein flaches, leicht gewoelbtes Stueck (wie echtes Papier)
+     - ein flaches, leicht gewoelbtes Stück (wie echtes Papier)
      - mit einem gemalten Bild drauf (aus dem Ordner schnipsel/)
      - in einer Farbe, die man frei aussuchen kann
    ================================================================== */
@@ -19,9 +19,9 @@ const texturen = new Map();   // pfad -> THREE.Texture
 const materialien = new Map();
 
 /**
- * Laedt ein SVG-Bild und malt es auf eine Leinwand fester Groesse.
+ * Laedt ein SVG-Bild und malt es auf eine Leinwand fester Größe.
  * (Direkt als Textur laden geht auf iPhones manchmal schief, darum
- *  der Umweg ueber die Leinwand - so klappt es ueberall.)
+ *  der Umweg über die Leinwand - so klappt es überall.)
  */
 function ladeEinBild(pfad, groesse = 256) {
   return new Promise((fertig) => {
@@ -44,7 +44,7 @@ function ladeEinBild(pfad, groesse = 256) {
     };
     bild.onerror = () => {
       console.warn('Bild nicht gefunden:', pfad);
-      // Notfall: ein weisses Quadrat, damit das Spiel weiterlaeuft
+      // Notfall: ein weißes Quadrat, damit das Spiel weiterläuft
       const leinwand = document.createElement('canvas');
       leinwand.width = leinwand.height = 8;
       const c = leinwand.getContext('2d');
@@ -78,7 +78,7 @@ export function textur(name) {
 const geometrien = new Map();
 
 /**
- * Ein Stueck Papier: flach, aber leicht gewoelbt - dadurch faengt es
+ * Ein Stück Papier: flach, aber leicht gewoelbt - dadurch fängt es
  * das Licht wie echtes Papier und sieht nicht wie ein Aufkleber aus.
  */
 function papierGeometrie(breite, hoehe, woelbung) {
@@ -104,10 +104,10 @@ function papierGeometrie(breite, hoehe, woelbung) {
  * macheSchnipsel({ bild, farbe, hoehe, woelbung, leuchten })
  *
  *   bild     - Name aus dem Ordner schnipsel/ (z.B. 'blatt-1')
- *   farbe    - z.B. '#7fc24a' (das weisse Bild wird damit eingefaerbt)
- *   hoehe    - wie gross das Stueck ist (Breite kommt vom Bild)
+ *   farbe    - z.B. '#7fc24a' (das weiße Bild wird damit eingefaerbt)
+ *   hoehe    - wie groß das Stück ist (Breite kommt vom Bild)
  *   woelbung - 0 = brettflach, 0.2 = deutlich gebogen
- *   leuchten - leuchtet von sich aus (fuer Sterne, Funken)
+ *   leuchten - leuchtet von sich aus (für Sterne, Funken)
  */
 export function macheSchnipsel(einstellungen) {
   const {
@@ -153,7 +153,7 @@ export function macheSchnipsel(einstellungen) {
 /* ---------- Hilfen ------------------------------------------------ */
 
 /** Zufallszahl zwischen a und b - mit eigenem Wuerfel, damit die Welt
- *  bei jedem Spiel gleich aussieht (sonst springen die Blaetter herum). */
+ *  bei jedem Spiel gleich aussieht (sonst springen die Blätter herum). */
 export function machWuerfel(startzahl = 1) {
   let s = startzahl >>> 0 || 1;
   return function wuerfel(a = 0, b = 1) {
@@ -164,7 +164,7 @@ export function machWuerfel(startzahl = 1) {
   };
 }
 
-/** Faerbt eine Farbe etwas heller oder dunkler (fuer Lagen im Papier). */
+/** Faerbt eine Farbe etwas heller oder dunkler (für Lagen im Papier). */
 export function tone(hex, heller = 0) {
   const f = new THREE.Color(hex);
   const h = {};
@@ -183,14 +183,14 @@ export function stellAuf(objekt, richtung) {
 /* ==================================================================
    ZUSAMMENBACKEN
 
-   Ein Baum aus 30 Schnipseln waere fuer ein Handy viel Arbeit:
-   es muesste 30 Mal einzeln zeichnen. Darum kleben wir alle
-   Schnipsel, die sich nicht bewegen, zu einem einzigen Stueck
+   Ein Baum aus 30 Schnipseln wäre für ein Handy viel Arbeit:
+   es müsste 30 Mal einzeln zeichnen. Darum kleben wir alle
+   Schnipsel, die sich nicht bewegen, zu einem einzigen Stück
    zusammen. Die Farben bleiben trotzdem verschieden, weil jede Ecke
    des Papiers ihre Farbe mitbekommt.
 
    Schnipsel mit  userData.beweglich = true  bleiben einzeln,
-   damit sie wackeln, blinzeln oder flattern koennen.
+   damit sie wackeln, blinzeln oder flattern können.
    ================================================================== */
 
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -266,8 +266,8 @@ export function backeZusammen(gruppe) {
 /* ==================================================================
    GEMALTE FLAECHEN
 
-   Fuer runde Sachen (Planet, Mond) brauchen wir kein Schnipsel,
-   sondern eine gemalte Oberflaeche: viele dicke Pinselstriche,
+   Für runde Sachen (Planet, Mond) brauchen wir kein Schnipsel,
+   sondern eine gemalte Oberfläche: viele dicke Pinselstriche,
    direkt vom Computer gemalt.
    ================================================================== */
 

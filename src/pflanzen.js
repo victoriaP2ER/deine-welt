@@ -2,8 +2,8 @@
    PFLANZEN - aus Schnipseln zusammengeklebte 3D-Modelle.
 
    Jedes Modell ist eine kleine Bastelarbeit:
-   Ein Baum besteht aus 3 Stammstreifen, ein paar Aesten und
-   ungefaehr 25 einzelnen Blaettern, die alle im Raum stehen.
+   Ein Baum besteht aus 3 Stammstreifen, ein paar Ästen und
+   ungefaehr 25 einzelnen Blättern, die alle im Raum stehen.
    Darum sieht er von jeder Seite anders aus - wie echtes Pappmache.
    ================================================================== */
 
@@ -51,7 +51,7 @@ function richteNachAussen(netz, richtung, drehung) {
 /* ==================================================================
    BAUM
    ================================================================== */
-export function baueBaum({ groesse = 1, palette = 'laubGruen', startzahl = 1, blaetter = 26 } = {}) {
+export function baueBaum({ groesse = 1, palette = 'laubGrün', startzahl = 1, blaetter = 26 } = {}) {
   const w = machWuerfel(startzahl * 7919 + 13);
   const baum = new THREE.Group();
   const laubFarben = FARBEN[palette] || FARBEN.laubGruen;
@@ -72,7 +72,7 @@ export function baueBaum({ groesse = 1, palette = 'laubGruen', startzahl = 1, bl
     s.scale.x = w(0.8, 1.05);
     stamm.add(s);
   }
-  /* --- Aeste --- */
+  /* --- Äste --- */
   for (let i = 0; i < 3; i++) {
     const ast = macheSchnipsel({
       bild: 'streifen',
@@ -88,7 +88,7 @@ export function baueBaum({ groesse = 1, palette = 'laubGruen', startzahl = 1, bl
   }
   baum.add(stamm);
 
-  /* --- Krone: viele einzelne Blaetter auf einer Kugel --- */
+  /* --- Krone: viele einzelne Blätter auf einer Kugel --- */
   const krone = new THREE.Group();
   krone.position.y = stammHoehe + 0.34 * groesse;
   const kronenRadius = 0.4 * groesse;
@@ -114,7 +114,7 @@ export function baueBaum({ groesse = 1, palette = 'laubGruen', startzahl = 1, bl
   backeZusammen(krone);
   backeZusammen(stamm);
 
-  /* --- ein paar lose Blaetter, die im Wind zappeln --- */
+  /* --- ein paar lose Blätter, die im Wind zappeln --- */
   const zappelBlaetter = [];
   for (let i = 0; i < 4; i++) {
     const p = punkte[Math.floor(w(0, punkte.length))];
@@ -154,8 +154,8 @@ export function baueGras({ groesse = 1, trocken = false, startzahl = 1, faecher 
   const farben = trocken ? FARBEN.grasTrocken : FARBEN.grasGesund;
   const halmGruppe = new THREE.Group();
 
-  /* Ein Grasbueschel ist wie ein Papierfaecher:
-     drei flache Faecher, die kreuzweise ineinander stecken.
+  /* Ein Grasbüschel ist wie ein Papierfächer:
+     drei flache Fächer, die kreuzweise ineinander stecken.
      Von jeder Seite sieht man immer einen gut. */
   for (let f = 0; f < faecher; f++) {
     const ebene = new THREE.Group();
@@ -163,7 +163,7 @@ export function baueGras({ groesse = 1, trocken = false, startzahl = 1, faecher 
 
     const halmeProFaecher = 4;
     for (let i = 0; i < halmeProFaecher; i++) {
-      const mitte = i - (halmeProFaecher - 1) / 2;     // faechert nach links und rechts
+      const mitte = i - (halmeProFaecher - 1) / 2;     // fächert nach links und rechts
       const hoehe = (trocken ? 0.17 : 0.3) * groesse * w(0.85, 1.15)
                     * (1 - Math.abs(mitte) * 0.22);     // aussen kuerzer
       const halm = macheSchnipsel({
@@ -174,7 +174,7 @@ export function baueGras({ groesse = 1, trocken = false, startzahl = 1, faecher 
       });
       halm.scale.x = 1.1;                               // etwas breiter = sieht nach Papier aus
       halm.position.set(mitte * 0.06 * groesse, hoehe * 0.44, w(-0.014, 0.014) * groesse);
-      // faechert in der Ebene auf; trockene Halme haengen weiter nach aussen
+      // fächert in der Ebene auf; trockene Halme hängen weiter nach aussen
       halm.rotation.z = mitte * (trocken ? w(0.34, 0.5) : w(0.24, 0.4));
       halm.rotation.x = trocken ? w(0.04, 0.16) : w(-0.05, 0.05);
       ebene.add(halm);
@@ -196,7 +196,7 @@ export function baueGras({ groesse = 1, trocken = false, startzahl = 1, faecher 
 }
 
 /* ==================================================================
-   BLUME - Bluetenblaetter stehen echt im Kreis, nicht flach
+   BLUME - Blütenblätter stehen echt im Kreis, nicht flach
    ================================================================== */
 export function baueBlume({ groesse = 1, sorte = 'rosa', startzahl = 1 } = {}) {
   const w = machWuerfel(startzahl * 15485863 + 3);
@@ -215,7 +215,7 @@ export function baueBlume({ groesse = 1, sorte = 'rosa', startzahl = 1 } = {}) {
   stiel.scale.x = 0.55;
   blume.add(stiel);
 
-  /* --- zwei Blaetter am Stiel --- */
+  /* --- zwei Blätter am Stiel --- */
   for (let i = 0; i < 2; i++) {
     const b = macheSchnipsel({
       bild: 'blatt-klein',
@@ -229,13 +229,13 @@ export function baueBlume({ groesse = 1, sorte = 'rosa', startzahl = 1 } = {}) {
     blume.add(b);
   }
 
-  /* --- Bluete --- */
+  /* --- Blüte --- */
   const bluete = new THREE.Group();
   bluete.position.y = stielHoehe;
   const anzahl = 5 + Math.floor(w(0, 2));
   for (let i = 0; i < anzahl; i++) {
     const blatt = macheSchnipsel({
-      bild: 'blueten-blatt',
+      bild: 'blüten-blatt',
       farbe: tone(wahl(blattFarben, w), w(-0.03, 0.06)),
       hoehe: 0.19 * groesse,
       woelbung: 0.06 * groesse,
@@ -344,7 +344,7 @@ export function bauePilz({ groesse = 1, startzahl = 1 } = {}) {
     teil.rotation.set(-1.25, -winkel, 0);
     hut.add(teil);
   }
-  // weisse Punkte
+  // weiße Punkte
   for (let i = 0; i < 3; i++) {
     const punkt = macheSchnipsel({ bild: 'klecks', farbe: '#fffaf0', hoehe: 0.04 * groesse, woelbung: 0.01 });
     const winkel = w(0, Math.PI * 2);
@@ -363,7 +363,7 @@ export function bauePilz({ groesse = 1, startzahl = 1 } = {}) {
 }
 
 /* ==================================================================
-   SETZLING - wird spaeter zum Baum
+   SETZLING - wird später zum Baum
    ================================================================== */
 export function baueSetzling({ groesse = 1, startzahl = 1 } = {}) {
   const w = machWuerfel(startzahl * 86028121 + 17);
@@ -426,14 +426,14 @@ export function baueStein({ groesse = 1, startzahl = 1 } = {}) {
 }
 
 /* ==================================================================
-   SEEROSE - waechst nur auf dem Wasser
+   SEEROSE - wächst nur auf dem Wasser
    ================================================================== */
-export function baueSeerose({ groesse = 1, sorte = 'weiss', startzahl = 1 } = {}) {
+export function baueSeerose({ groesse = 1, sorte = 'weiß', startzahl = 1 } = {}) {
   const w = machWuerfel(startzahl * 7919 + 101);
   const rose = new THREE.Group();
   const blattFarben = FARBEN.blueten[sorte] || FARBEN.blueten.weiss;
 
-  /* --- die flachen runden Blaetter, die auf dem Wasser liegen --- */
+  /* --- die flachen runden Blätter, die auf dem Wasser liegen --- */
   const blaetter = new THREE.Group();
   for (let i = 0; i < 3; i++) {
     const b = macheSchnipsel({
@@ -451,14 +451,14 @@ export function baueSeerose({ groesse = 1, sorte = 'weiss', startzahl = 1 } = {}
   rose.add(blaetter);
   backeZusammen(blaetter);
 
-  /* --- die Bluete in der Mitte --- */
+  /* --- die Blüte in der Mitte --- */
   const bluete = new THREE.Group();
   bluete.position.y = 0.03 * groesse;
   const anzahl = 6;
   for (let ring = 0; ring < 2; ring++) {
     for (let i = 0; i < anzahl; i++) {
       const blatt = macheSchnipsel({
-        bild: 'blueten-blatt',
+        bild: 'blüten-blatt',
         farbe: tone(wahl(blattFarben, w), ring * 0.06),
         hoehe: (0.1 - ring * 0.025) * groesse,
         woelbung: 0.03,

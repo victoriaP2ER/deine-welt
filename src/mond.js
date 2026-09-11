@@ -1,10 +1,10 @@
 /* ==================================================================
    DER MOND
 
-   Er ist der Freund, der die Geschichte erzaehlt.
+   Er ist der Freund, der die Geschichte erzählt.
    Sein Kopf ist eine Pappmache-Kugel, sein Gesicht besteht aus
    aufgeklebten Schnipseln: zwei Augen mit Pupillen, zwei Brauen,
-   ein Mund, zwei Wangen - und eine Traene fuer traurige Momente.
+   ein Mund, zwei Wangen - und eine Traene für traurige Momente.
 
    Alles davon kann sich bewegen: er blinzelt, schaut umher,
    und wenn er redet, klappt sein Mund auf und zu.
@@ -61,8 +61,8 @@ export function baueMond() {
   }
 
   /* ---------- RINGE ----------
-     Aus vielen kleinen Papierstueckchen auf eine Kreisbahn geklebt.
-     Sie sind vom Kopf entkoppelt: waehrend das Gesicht dich anschaut,
+     Aus vielen kleinen Papierstückchen auf eine Kreisbahn geklebt.
+     Sie sind vom Kopf entkoppelt: während das Gesicht dich anschaut,
      behalten die Ringe ihre eigene Neigung im Weltall.              */
   const ringe = new THREE.Group();
   mond.add(ringe);
@@ -98,9 +98,9 @@ export function baueMond() {
     backeZusammen(gebacken);
 
     /* Wichtig: die Ringe sind viel breiter als der Mond selbst.
-       Wuerden sie Fingertipps abfangen, koennte man nichts mehr
+       Wuerden sie Fingertipps abfangen, könnte man nichts mehr
        antippen, was dahinter liegt (zum Beispiel den Planeten).
-       Darum sind sie fuer Beruehrungen unsichtbar.                  */
+       Darum sind sie für Beruehrungen unsichtbar.                  */
     ringe.traverse((teil) => {
       if (teil.isMesh) teil.raycast = () => {};
     });

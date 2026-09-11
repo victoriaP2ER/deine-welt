@@ -1,6 +1,6 @@
 /* ==================================================================
    DIE ANZEIGE - Sprechblase, Hinweise, Tasche, Sterne.
-   Das ist alles normales HTML, das ueber dem 3D-Bild liegt.
+   Das ist alles normales HTML, das über dem 3D-Bild liegt.
    ================================================================== */
 
 import { klangSprechen } from './klang.js';
@@ -48,7 +48,7 @@ let beimFertig = null;
 let istFertig = true;
 
 /**
- * Der Mond sagt einen Satz. Der Text erscheint Buchstabe fuer
+ * Der Mond sagt einen Satz. Der Text erscheint Buchstabe für
  * Buchstabe - das macht es lebendiger (und der Mond blubbert dazu).
  */
 export function sagText(satz, { beiFertig = null, beiBuchstabe = null } = {}) {
@@ -57,7 +57,7 @@ export function sagText(satz, { beiFertig = null, beiBuchstabe = null } = {}) {
   beimFertig = beiFertig;
   istFertig = false;
   const warVersteckt = teile.blase.hidden;
-  letzteBlaseX = -999;                     // Groesse neu messen lassen
+  letzteBlaseX = -999;                     // Größe neu messen lassen
   teile.blase.hidden = false;
   teile.blaseText.textContent = '';
   teile.blaseWeiter.classList.remove('da');
@@ -78,7 +78,7 @@ export function sagText(satz, { beiFertig = null, beiBuchstabe = null } = {}) {
     if (beiBuchstabe) beiBuchstabe(i / satz.length);
     if (i >= satz.length) {
       clearInterval(schreibUhr);
-      letzteBlaseX = -999;          // Hoehe neu messen: der Satz ist fertig
+      letzteBlaseX = -999;          // Höhe neu messen: der Satz ist fertig
       istFertig = true;
       teile.blaseWeiter.classList.add('da');
       if (beimFertig) beimFertig();
@@ -117,7 +117,7 @@ let gemerkteHoehe = 100;
 export function setzeBlaseAn(x, y) {
   const b = teile.blase;
   if (b.hidden) return;
-  // Breite und Hoehe nur ab und zu neu messen - das spart Arbeit,
+  // Breite und Höhe nur ab und zu neu messen - das spart Arbeit,
   // weil diese Funktion bei jedem Bild aufgerufen wird.
   if (letzteBlaseX === -999) {
     gemerkteBreite = b.offsetWidth || 240;
@@ -126,8 +126,8 @@ export function setzeBlaseAn(x, y) {
   const rand = 14;
   const links = Math.round(Math.min(Math.max(x, gemerkteBreite / 2 + rand),
                                     window.innerWidth - gemerkteBreite / 2 - rand));
-  // Die Blase waechst von ihrem Punkt aus nach OBEN. Darum muss ihre
-  // ganze Hoehe unter den Bildschirmrand passen, sonst ist der Anfang
+  // Die Blase wächst von ihrem Punkt aus nach OBEN. Darum muss ihre
+  // ganze Höhe unter den Bildschirmrand passen, sonst ist der Anfang
   // des Satzes abgeschnitten.
   const oben = Math.round(Math.min(
     Math.max(y, gemerkteHoehe + 26 + rand),
@@ -175,7 +175,7 @@ export function beiWerkzeugWechsel(handler) { beimWerkzeugWechsel = handler; }
 export function hatWerkzeug(name) { return werkzeuge.has(name); }
 
 /* ---------- Umsehen-Pause ----------
-   Nach einem schoenen Moment darf man sich in Ruhe umsehen. Die
+   Nach einem schönen Moment darf man sich in Ruhe umsehen. Die
    Hinweiszeile wird dann zu einem Knopf: erst wenn man ihn antippt
    (oder Lunix), geht die Geschichte weiter.                          */
 let weiterHandler = null;
@@ -206,7 +206,7 @@ teile.hinweis.addEventListener('pointerdown', (e) => {
   h();
 });
 
-/* ---------- Sterne fuer geschaffte Aufgaben ---------- */
+/* ---------- Sterne für geschaffte Aufgaben ---------- */
 let sternZahl = 0;
 export function gibStern() {
   sternZahl++;
